@@ -28,7 +28,7 @@ def extract_text_from_file(file: UploadFile):
     if response.status_code == 200:
         return response.json().get("text", "")
     else:
-        print(f"❌ OCR 오류: {response.json()}")
+        print(f" OCR 오류: {response.json()}")
         return None
 
 # GPT 요청 함수
