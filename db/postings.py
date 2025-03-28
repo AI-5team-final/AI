@@ -1,8 +1,6 @@
 # mongo.py
 from typing import List, Dict, Any
 import os
-import openai
-import certifi
 import logging
 import asyncio
 from pymongo import MongoClient
@@ -10,9 +8,11 @@ from pymongo.operations import SearchIndexModel
 from pymongo.errors import OperationFailure
 from dotenv import load_dotenv
 from datetime import datetime
+import certifi
+from openai import OpenAI
 
+# 환경 설정
 load_dotenv()
-
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 # MongoDB 연결
@@ -20,6 +20,10 @@ ca = certifi.where()
 client = MongoClient(os.getenv("MONGODB_URI"), tlsCAFile=ca)
 db = client["Rezoom"]
 collection = db["postings"]
+
+# OpenAI client 초기화
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+EMBEDDING_MODEL = "text-embedding-3-small"
 
 # MongoDB 연결 테스트
 try:
@@ -36,27 +40,30 @@ except Exception as e:
     logging.error(f"MongoDB Atlas 연결 실패: {str(e)}")
     raise e
 
-# OpenAI 설정
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
-EMBEDDING_MODEL = "text-embedding-3-small"
-
 # 임베딩 생성 함수
 async def get_embedding_async(text: str) -> List[float]:
     if not text or not text.strip():
-        raise ValueError("임베딩 요청 텍스트가 비어있습니다.")
-
-    # openai 라이브러리는 비동기 지원 미흡하므로 쓰레드에서 실행
+        logging.warning("[임베딩 요청 차단] 빈 텍스트")
+        return[]
     return await asyncio.to_thread(_sync_get_embedding, text)
 
 def _sync_get_embedding(text: str) -> List[float]:
+    if not text.strip():
+        logging.error("임베딩 요청 텍스트가 비어 있음")
+        return []
     try:
-        response = openai.Embedding.create(input=[text.strip()], model=EMBEDDING_MODEL)
-        return response["data"][0]["embedding"]
+        response = openai_client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=[text.strip()]
+        )
+        embedding = response.data[0].embedding
+        if not embedding or len(embedding) != 1536:
+            logging.error(f"[임베딩 오류] 벡터 길이 오류: {len(embedding)}")
+            return []
+        return embedding
     except Exception as e:
-        logging.error(f"[임베딩 오류]: {e}")
-        raise
-
+        logging.error(f"[임베딩 생성 실패]: {e}")
+        return []
 
 # 문서 저장
 def store_job_posting(title: str, description: str, embedding: List[float], url: str = "") -> bool:
@@ -78,9 +85,11 @@ def store_job_posting(title: str, description: str, embedding: List[float], url:
 def get_document_count():
     return collection.count_documents({})
 
-# 벡터 유사도 기반 검색 (기본)
+# 유사도 검색 함수
 async def search_similar_documents_with_score(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
     query_vector = await get_embedding_async(query)
+    if not query_vector:
+        raise ValueError("임베딩 벡터가 비어있음 ㅎ")
     pipeline = [
         {
             "$vectorSearch": {
@@ -96,19 +105,19 @@ async def search_similar_documents_with_score(query: str, top_k: int = 5) -> Lis
             "$project": {
                 "title": 1,
                 "description": 1,
+                "url": 1,
                 "score": {"$meta": "vectorSearchScore"}
             }
         }
     ]
     return list(collection.aggregate(pipeline))
 
-
-# 벡터 인덱스 생성 (1536차원)
+# 벡터 인덱스 생성
 def create_vector_index_if_not_exists():
     index_name = "vector_index"
     existing_indexes = collection.list_search_indexes()
     if index_name in [idx["name"] for idx in existing_indexes]:
-        logging.info(f"'{index_name}' 인덱스가 이미 존재합니다.")
+        logging.info(f"'{index_name}' posting 컬렉션의 인덱스 이미 존재")
         return
 
     index_model = SearchIndexModel(
@@ -128,8 +137,9 @@ def create_vector_index_if_not_exists():
 
     try:
         collection.create_search_index(model=index_model)
-        logging.info(f"'{index_name}' 인덱스가 생성되었습니다!")
+        logging.info(f"'{index_name}' 인덱스 생성!")
     except OperationFailure as e:
         logging.error(f"벡터 인덱스 생성 실패: {e.details}")
 
+# 인덱스 초기화 실행
 create_vector_index_if_not_exists()

@@ -6,6 +6,7 @@ from pymongo import MongoClient
 from pymongo.errors import OperationFailure
 from pymongo.operations import SearchIndexModel
 from dotenv import load_dotenv
+from openai import OpenAI
 import certifi
 import logging
 
@@ -20,22 +21,25 @@ db = client["Rezoom"]
 resumes_collection = db["resumes"]
 
 # OpenAI 설정
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 # 임베딩 함수
 def get_embedding(text: str) -> List[float]:
     if not text or not text.strip():
-        raise ValueError("임베딩 요청 텍스트가 비어있습니다.")
+        raise ValueError("임베딩 요청 텍스트가 비어있음 ㅎ")
     try:
-        response = openai.Embedding.create(
+        response = openai_client.embeddings.create(
             input=[text.strip()],
             model=EMBEDDING_MODEL
         )
-        return response["data"][0]["embedding"]
+        embedding = response.data[0].embedding
+        if not embedding or len(embedding) != 1536:
+            raise ValueError("임베딩 결과 비정상!")
+        return embedding
     except Exception as e:
         logging.error(f"[OpenAI 임베딩 오류]: {e}")
-        return []
+        raise RuntimeError("임베딩 실패: 반환된 벡터 없음!")
 
 # CSV 이력서 처리
 def process_resume_csv(filepath: str) -> int:
@@ -129,7 +133,7 @@ def create_resume_vector_index_if_not_exists():
     index_name = "vector_index"
     existing_indexes = resumes_collection.list_search_indexes()
     if index_name in [idx["name"] for idx in existing_indexes]:
-        logging.info(f"'{index_name}' 인덱스가 이미 존재합니다.")
+        logging.info(f"'{index_name}' resumes 컬렉션의 인덱스 이미 존재")
         return
     index_model = SearchIndexModel(
         definition={
