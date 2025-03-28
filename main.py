@@ -143,6 +143,46 @@ async def match_job_posting_endpoint(job_posting: UploadFile = File(...)):
         "matching_resumes": sorted(results, key=lambda x: x["similarity_score"], reverse=True)
     }
 
+# ==== 이력서 & 채용공고 1:1 매칭 ====
+@app.post("/compare_resume_posting")
+async def compare_resume_posting(
+    resume: UploadFile = File(...),
+    job_posting: UploadFile = File(...)
+):
+    # 1. OCR 추출
+    resume_text = await extract_text_from_uploadfile(resume)
+    posting_text = await extract_text_from_uploadfile(job_posting)
+
+    if not resume_text or not posting_text:
+        raise HTTPException(400, detail="이력서 또는 채용공고 텍스트가 없습니다.")
+
+    # 2. GPT 비교 평가
+    try:
+        evaluation_result = await analyze_resume_job_matching(resume_text, posting_text)
+        if not evaluation_result or len(evaluation_result.strip()) < 10:
+            raise HTTPException(500, detail="GPT 평가 실패")
+    except Exception as e:
+        logging.error(f"[GPT 분석 오류]: {e}")
+        raise HTTPException(500, detail="GPT 평가 중 오류 발생")
+
+    # 3. Agent 분석
+    try:
+        feedback = await run_resume_agent(evaluation_result)
+    except Exception as e:
+        logging.error(f"[Agent 분석 오류]: {e}")
+        feedback = "AI Agent 분석 실패"
+
+    # 4. 응답
+    return {
+        "message": "이력서-공고 비교 완료",
+        "gpt_evaluation": evaluation_result,
+        "agent_feedback": feedback
+    }
+
+
+
+
+
 # ==== 채용공고 PDF 일괄 처리 ==== 채용공고는 하나씩 올리는게 번거로워 document에 있는 폴더의 pdf를 등록하게끔 해놨습니다. 나중에 수정 예정
 @app.post("/upload_postings_pdf")
 async def store_all_documents_endpoint_async():
