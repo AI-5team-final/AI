@@ -4,7 +4,7 @@ import logging
 import os
 import uvicorn
 import certifi
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Path
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -13,7 +13,7 @@ from services.ocr_service import extract_text_from_uploadfile, extract_text_from
 from services.gpt_service import analyze_resume_job_matching
 from agent import run_resume_agent
 from db.postings import store_job_posting, get_embedding_async, search_similar_documents_with_score, collection
-from db.resumes import search_similar_resumes_with_score, process_resume_csv
+from db.resumes import search_similar_resumes_with_score, process_resume_csv, store_resume_from_pdf, get_embedding, resumes_collection
 from bson import ObjectId, errors
 
 load_dotenv()
@@ -41,6 +41,9 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 class AgentRequest(BaseModel):
     job_id:str # 프론트가 보내는 이름
     evaluation_result: str
+
+class ResumeSaveRequest(BaseModel):
+    resume_text: str
 
 # ==== 채용공고 PDF OCR + 임베딩 저장 ====
 async def process_pdf_async(pdf_file: str):
@@ -149,14 +152,12 @@ async def compare_resume_posting(
     resume: UploadFile = File(...),
     job_posting: UploadFile = File(...)
 ):
-    # 1. OCR 추출
     resume_text = await extract_text_from_uploadfile(resume)
     posting_text = await extract_text_from_uploadfile(job_posting)
 
     if not resume_text or not posting_text:
         raise HTTPException(400, detail="이력서 또는 채용공고 텍스트가 없습니다.")
 
-    # 2. GPT 비교 평가
     try:
         evaluation_result = await analyze_resume_job_matching(resume_text, posting_text)
         if not evaluation_result or len(evaluation_result.strip()) < 10:
@@ -165,23 +166,50 @@ async def compare_resume_posting(
         logging.error(f"[GPT 분석 오류]: {e}")
         raise HTTPException(500, detail="GPT 평가 중 오류 발생")
 
-    # 3. Agent 분석
     try:
         feedback = await run_resume_agent(evaluation_result)
     except Exception as e:
         logging.error(f"[Agent 분석 오류]: {e}")
         feedback = "AI Agent 분석 실패"
 
-    # 4. 응답
     return {
         "message": "이력서-공고 비교 완료",
         "gpt_evaluation": evaluation_result,
         "agent_feedback": feedback
     }
 
+# ==== 이력서 하나 저장 -> objectId 응답 ====
+@app.post("/upload-pdf")
+async def upload_pdf_endpoint(resume: UploadFile = File(...)):
+    try:
+        resume_text = await extract_text_from_uploadfile(resume)
+        if not resume_text or len(resume_text.strip()) < 10:
+            raise HTTPException(400, detail="이력서 텍스트가 유효하지 않습니다.")
 
+        embedding = await asyncio.to_thread(get_embedding, resume_text)
+        resume_id = store_resume_from_pdf(resume_text, embedding)
+        if not resume_id:
+            raise HTTPException(500, detail="MongoDB 저장 실패")
 
+        return {"object_id": resume_id}
+    
+    except Exception as e:
+        logging.error(f"[업로드 실패]: {e}")
+        raise HTTPException(status_code=500, detail="서버 오류 발생")
 
+# ==== 이력서 ObjectId로 하나 삭제 ====
+@app.delete("/delete_resume/{resume_id}")
+async def delete_resume(resume_id: str = Path(..., description="MongoDB resume 문서의 ObjectId")):
+    try:
+        object_id = ObjectId(resume_id)
+    except (errors.InvalidId, TypeError):
+        raise HTTPException(status_code=400, detail="유효하지 않은 ObjectId 형식입니다.")
+
+    result = resumes_collection.delete_one({"_id": object_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="해당 이력서를 찾을 수 없습니다.")
+
+    return {"message": "이력서 삭제 완료", "resume_id": resume_id}
 
 # ==== 채용공고 PDF 일괄 처리 ==== 채용공고는 하나씩 올리는게 번거로워 document에 있는 폴더의 pdf를 등록하게끔 해놨습니다. 나중에 수정 예정
 @app.post("/upload_postings_pdf")

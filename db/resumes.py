@@ -41,6 +41,21 @@ def get_embedding(text: str) -> List[float]:
         logging.error(f"[OpenAI 임베딩 오류]: {e}")
         raise RuntimeError("임베딩 실패: 반환된 벡터 없음!")
 
+# 사용자 이력서 저장
+def store_resume_from_pdf(resume_text: str, embedding: List[float]) -> str:
+    try:
+        doc = {
+            "original_text": resume_text,
+            "structured": {},  # PDF는 정형 데이터 파싱 생략하겠음
+            "embedding": embedding,
+            "source": "pdf"
+        }
+        result = resumes_collection.insert_one(doc)
+        return str(result.inserted_id)
+    except Exception as e:
+        logging.error(f"[PDF 이력서 저장 실패]: {e}")
+        return ""
+
 # CSV 이력서 처리
 def process_resume_csv(filepath: str) -> int:
     success_count = 0
