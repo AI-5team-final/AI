@@ -1,6 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File
 from services.ocr_service import extract_text_from_uploadfile, extract_text_from_path
-from services.gpt_service import analyze_job_resume_matching
+from services.gpt_service import analyze_resume_job_matching
 from db.resumes import search_similar_resumes_with_score
 from db.postings import store_job_posting, get_embedding_async
 from exception.base import (
@@ -27,70 +27,64 @@ async def process_pdf_async(pdf_file: str):
         logging.error(f"[{filename} 처리 실패] {e}")
         return filename, False
 
-def extract_from_original_text(text: str) -> dict:
-    """비정형 original_text에서 이름 추출"""
-    name_match = re.search(r"(?:이름[:：]?\s*)?([가-힣]{2,4})", text)
-    return {
-        "name": name_match.group(1) if name_match else "이름 없음"
-    }
+# def extract_from_original_text(text: str) -> dict:
+#     """비정형 original_text에서 이름 추출"""
+#     name_match = re.search(r"(?:이름[:：]?\s*)?([가-힣]{2,4})", text)
+#     return {
+#         "name": name_match.group(1) if name_match else "이름 없음"
+#     }
 
 
 @router.post("/match_job_posting_summary")
 async def match_job_posting_summary(job_posting: UploadFile = File(...)):
     posting_text = await extract_text_from_uploadfile(job_posting)
     if not posting_text or len(posting_text.strip()) < 10:
-        raise JobPostingTextMissingException
+        raise JobPostingTextMissingException()
 
     try:
         top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 이력서 검색 실패]: {e}")
-        raise SimilarFoundException
+        raise SimilarFoundException()
 
-    resume_texts = []
-    raw_infos = []
-
-    for match in top_matches:
-        structured = match.get("structured", {})
-        original_text = match.get("original_text", "")
-        resume_text = structured.get("self_intro") or original_text
-        resume_texts.append(resume_text)
-
-        raw_infos.append({
-            "structured": structured,
-            "original_text": original_text,
-            "resume_text": resume_text
-        })
-
+    # GPT 평가 요청
     gpt_tasks = [
-        analyze_job_resume_matching(data["resume_text"], posting_text)
-        for data in raw_infos
+        analyze_resume_job_matching(
+            resume_text=match.get("original_text", ""),
+            job_text=posting_text
+        )
+        for match in top_matches
     ]
     gpt_results = await asyncio.gather(*gpt_tasks, return_exceptions=True)
 
+    # 결과 정리
     results = []
-    for i, gpt_result in enumerate(gpt_results):
+    for i, match in enumerate(top_matches):
+        gpt_result = gpt_results[i]
+        evaluation = {
+            "total_score": 0,
+            "summary": "GPT 평가 실패"
+        }
+
         if isinstance(gpt_result, dict):
-            name = gpt_result.get("name")
-            if not name:
-                fallback = extract_from_original_text(raw_infos[i]["original_text"])
-                name = fallback["name"]
-            results.append({
-                "name": name,
-                "summary": gpt_result.get("summary", "요약 없음")
-        })
-        else:
-            fallback = extract_from_original_text(raw_infos[i]["original_text"])
-            results.append({
-                "name": fallback["name"],
-                "summary": "GPT 평가 실패"
+            evaluation["total_score"] = gpt_result.get("total_score", 0)
+            evaluation["summary"] = gpt_result.get("summary", "요약 실패")
+
+        results.append({
+            "similarity_score": round(match.get("score", 0.0), 4),
+            "gpt_evaluation": evaluation
         })
 
     return {
-        "message": "이력서 요약 및 분석 결과입니다.",
-        "matching_resumes": results
+        "message": "이력서 매칭 및 GPT 요약 결과입니다.",
+        "matching_resumes": sorted(results, key=lambda x: x["gpt_evaluation"]["total_score"], reverse=True)
     }
+
+
+
+
+
 
 
 # ==== 채용공고 PDF 일괄 처리 ==== 채용공고는 하나씩 올리는게 번거로워 document에 있는 폴더의 pdf를 등록하게끔 해놨습니다. 나중에 수정 예정
