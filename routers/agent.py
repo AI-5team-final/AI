@@ -1,6 +1,7 @@
 from fastapi import APIRouter,  HTTPException
 from pydantic import BaseModel
 from services.agent_service import run_resume_agent
+from exception.base import GptEvaluationNotValidException, AIAnalylizeException
 
 import logging
 
@@ -15,7 +16,7 @@ class AgentRequest(BaseModel):
 async def analyze_with_agent(req: AgentRequest):
     evaluation_result = req.evaluation_result.strip()
     if not evaluation_result or len(evaluation_result) < 10:
-        raise HTTPException(status_code=400, detail="GPT 평가 결과가 유효하지 않습니다.")
+        raise GptEvaluationNotValidException()
 
     try:
         feedback = await run_resume_agent(evaluation_result)
@@ -25,4 +26,4 @@ async def analyze_with_agent(req: AgentRequest):
         }
     except Exception as e:
         logging.error(f"[Agent 분석 오류]: {e}")
-        raise HTTPException(status_code=500, detail="AI 분석 중 서버 오류 발생")
+        raise AIAnalylizeException()

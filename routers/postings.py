@@ -3,6 +3,9 @@ from services.ocr_service import extract_text_from_uploadfile, extract_text_from
 from services.gpt_service import analyze_job_resume_matching
 from db.resumes import search_similar_resumes_with_score
 from db.postings import store_job_posting, get_embedding_async
+from exception.base import (
+ JobPostingTextMissingException, SimilarFoundException
+)   
 import os, time, asyncio, re
 import logging
 
@@ -36,14 +39,14 @@ def extract_from_original_text(text: str) -> dict:
 async def match_job_posting_summary(job_posting: UploadFile = File(...)):
     posting_text = await extract_text_from_uploadfile(job_posting)
     if not posting_text or len(posting_text.strip()) < 10:
-        raise HTTPException(400, "채용공고 텍스트가 유효하지 않습니다.")
+        raise JobPostingTextMissingException
 
     try:
         top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 이력서 검색 실패]: {e}")
-        raise HTTPException(500, "유사 이력서 검색 중 오류 발생")
+        raise SimilarFoundException
 
     resume_texts = []
     raw_infos = []

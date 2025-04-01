@@ -3,7 +3,6 @@ import logging
 import httpx
 import asyncio
 import json
-import re
 
 from dotenv import load_dotenv
 from typing import Optional

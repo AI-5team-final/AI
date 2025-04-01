@@ -10,8 +10,10 @@ from db.resumes import (
 from db.postings import (
     search_similar_documents_with_score
 )
-
-
+from exception.base import (
+    JobSearchException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
+    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException
+)
 import os, asyncio, logging
 
 router = APIRouter()
@@ -25,14 +27,14 @@ class ResumeSaveRequest(BaseModel):
 async def match_resume_endpoint(resume: UploadFile = File(...)):
     resume_text = await extract_text_from_uploadfile(resume)
     if not resume_text:
-        raise HTTPException(400, "이력서 텍스트 없음")
+        raise ResumeTextMissingException()
 
     try:
         top_matches = await search_similar_documents_with_score(resume_text, top_k=5)
         logging.info(f"[유사 공고 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 공고 검색 실패]: {e}")
-        raise HTTPException(500, "공고 검색 중 오류 발생")
+        raise JobSearchException()
 
     # GPT 평가 비동기 병렬 호출
     gpt_tasks = [
@@ -72,18 +74,18 @@ async def upload_pdf_endpoint(resume: UploadFile = File(...)):
     try:
         resume_text = await extract_text_from_uploadfile(resume)
         if not resume_text or len(resume_text.strip()) < 10:
-            raise HTTPException(400, detail="이력서 텍스트가 유효하지 않습니다.")
+            raise ResumeTextMissingException()
 
         embedding = await get_embedding(resume_text) 
         resume_id = await store_resume_from_pdf(resume_text, embedding)
         if not resume_id:
-            raise HTTPException(500, detail="MongoDB 저장 실패")
+            raise MongoSaveException()
 
         return {"object_id": resume_id}
     
     except Exception as e:
         logging.error(f"[업로드 실패]: {e}")
-        raise HTTPException(status_code=500, detail="서버 오류 발생")
+        raise
 
 # ==== 이력서 ObjectId로 하나 삭제 ====
 @router.delete("/delete_resume/{resume_id}")
@@ -91,11 +93,11 @@ async def delete_resume(resume_id: str = Path(..., description="MongoDB resume �
     try:
         object_id = ObjectId(resume_id)
     except (errors.InvalidId, TypeError):
-        raise HTTPException(status_code=400, detail="유효하지 않은 ObjectId 형식입니다.")
+        raise InvalidObjectIdException()
 
     result = resumes_collection.delete_one({"_id": object_id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="해당 이력서를 찾을 수 없습니다.")
+        raise ResumeNotFoundException()
 
     return {"message": "이력서 삭제 완료", "object_id": resume_id}
 
@@ -110,15 +112,15 @@ async def compare_resume_posting(
     posting_text = await extract_text_from_uploadfile(job_posting)
 
     if not resume_text or not posting_text:
-        raise HTTPException(400, detail="이력서 또는 채용공고 텍스트가 없습니다.")
+        raise BothNotFoundException()
 
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
         if not evaluation_result or not isinstance(evaluation_result, dict) or 'summary' not in evaluation_result:
-            raise HTTPException(500, detail="GPT 평가 실패")
+            raise GptEvaluationFailedException
     except Exception as e:
         logging.error(f"[GPT 분석 오류]: {e}")
-        raise HTTPException(500, detail="GPT 평가 중 오류 발생")
+        raise GptProcessingException()
 
     try:
         feedback = await run_resume_agent(evaluation_result)
@@ -148,6 +150,6 @@ async def upload_resume_csv(file: UploadFile = File(...)):
 
     except Exception as e:
         logging.error(f"[CSV 이력서 처리 실패] {e}")
-        raise HTTPException(500, str(e))
+        raise ResumeTextMissingException()
 
     
