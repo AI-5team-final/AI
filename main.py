@@ -22,6 +22,7 @@ app.include_router(resumes.router, prefix="/resume", tags=["Resume"])
 app.include_router(postings.router, prefix="/posting", tags=["Posting"])
 app.include_router(agent.router, prefix="/agent", tags=["Agent"])
 
+
 @app.get("/")
 async def root():
     return {"message": "AI 이력서 매칭 API입니다."}
