@@ -4,6 +4,7 @@ from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
 from typing import List
 from dotenv import load_dotenv
+from exception.base import AIAnalylizeException
 
 load_dotenv()
 
@@ -89,4 +90,4 @@ async def run_resume_agent(evaluation_result: str) -> str:
 
     except Exception as e:
         logging.error(f"AI Agent 실행 중 오류 발생: {e}")
-        return "AI Agent 분석 실패"
+        raise AIAnalylizeException()

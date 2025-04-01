@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import certifi
 import logging
+import asyncio
 
 # 환경설정 및 로깅
 load_dotenv()
@@ -24,10 +25,11 @@ resumes_collection = db["resumes"]
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 EMBEDDING_MODEL = "text-embedding-3-small"
 
-# 임베딩 함수
-def get_embedding(text: str) -> List[float]:
+# 동기 임베딩 함수 (내부에서 사용)
+def _sync_get_embedding(text: str) -> List[float]:
     if not text or not text.strip():
-        raise ValueError("임베딩 요청 텍스트가 비어있음 ㅎ")
+        logging.warning("[임베딩 요청 차단] 빈 텍스트")
+        return []
     try:
         response = openai_client.embeddings.create(
             input=[text.strip()],
@@ -35,15 +37,24 @@ def get_embedding(text: str) -> List[float]:
         )
         embedding = response.data[0].embedding
         if not embedding or len(embedding) != 1536:
-            raise ValueError("임베딩 결과 비정상!")
+            logging.error(f"[임베딩 오류] 벡터 길이 오류: {len(embedding)}")
+            return []
         return embedding
     except Exception as e:
-        logging.error(f"[OpenAI 임베딩 오류]: {e}")
-        raise RuntimeError("임베딩 실패: 반환된 벡터 없음!")
+        logging.error(f"[임베딩 생성 실패]: {e}")
+        return []
+
+# 비동기 wrapper
+async def get_embedding(text: str) -> List[float]:
+    if not text or not text.strip():
+        logging.warning("[임베딩 요청 차단] 빈 텍스트")
+        return []
+    return await asyncio.to_thread(_sync_get_embedding, text)
 
 # 사용자 이력서 저장
-def store_resume_from_pdf(resume_text: str, embedding: List[float]) -> str:
+async def store_resume_from_pdf(resume_text: str, embedding: List[float]) -> str:
     try:
+        embedding = await get_embedding(resume_text)
         doc = {
             "original_text": resume_text,
             "structured": {},  # PDF는 정형 데이터 파싱 생략하겠음
@@ -56,7 +67,7 @@ def store_resume_from_pdf(resume_text: str, embedding: List[float]) -> str:
         logging.error(f"[PDF 이력서 저장 실패]: {e}")
         return ""
 
-# CSV 이력서 처리
+# CSV 이력서 처리 == 이건 csv structed 추가하려고
 def process_resume_csv(filepath: str) -> int:
     success_count = 0
 
@@ -80,7 +91,7 @@ def process_resume_csv(filepath: str) -> int:
                 email = row.get("email", "").strip()
 
                 embed_input = f"{', '.join(skills_list)} {experience} {self_intro}"
-                embedding = get_embedding(embed_input)
+                embedding = asyncio.run(get_embedding(embed_input))
                 if not embedding:
                     continue
 
@@ -111,12 +122,10 @@ def process_resume_csv(filepath: str) -> int:
     logging.info(f"[하이브리드 저장 완료] 유효 이력서 수: {success_count}")
     return success_count
 
-
-
-
 # 유사도 검색
-def search_similar_resumes_with_score(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-    query_vector = get_embedding(query)
+async def search_similar_resumes_with_score(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    query_vector = await get_embedding(query)
+    
     pipeline = [
         {
             "$vectorSearch": {
@@ -130,18 +139,13 @@ def search_similar_resumes_with_score(query: str, top_k: int = 5) -> List[Dict[s
         },
         {
             "$project": {
-                "structured.name": 1,
-                "structured.phone": 1,
-                "structured.email": 1,
-                "structured.skills": 1,
-                "structured.education": 1,
-                "structured.experience": 1,
-                "structured.self_intro": 1,
+                "structured": "$structured",  
                 "score": {"$meta": "vectorSearchScore"}
             }
         }
     ]
     return list(resumes_collection.aggregate(pipeline))
+
 
 # 벡터 인덱스 생성
 def create_resume_vector_index_if_not_exists():
