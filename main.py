@@ -85,7 +85,6 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
         })
 
     return {
-        "message": "매칭 완료",
         "matching_jobs": sorted(results, key=lambda x: x["similarity_score"], reverse=True)
     }
 
@@ -182,6 +181,7 @@ async def compare_resume_posting(
 @app.post("/upload-pdf")
 async def upload_pdf_endpoint(resume: UploadFile = File(...)):
     try:
+        print("요청옴")
         resume_text = await extract_text_from_uploadfile(resume)
         if not resume_text or len(resume_text.strip()) < 10:
             raise HTTPException(400, detail="이력서 텍스트가 유효하지 않습니다.")
