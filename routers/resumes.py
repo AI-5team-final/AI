@@ -16,7 +16,6 @@ import os, asyncio, logging
 
 router = APIRouter()
 
-CSV_DIR = "csv_uploads"
 
 class ResumeSaveRequest(BaseModel):
     resume_text: str
@@ -138,21 +137,17 @@ async def compare_resume_posting(
 @router.post("/upload_resume_csv")
 async def upload_resume_csv(file: UploadFile = File(...)):
     try:
-        filename = file.filename
-        filepath = os.path.join(CSV_DIR, filename)
-        with open(filepath, "wb") as f:
-            f.write(await file.read())
-
-        inserted_count = process_resume_csv(filepath)
-        os.remove(filepath)
+        content = await file.read()
+        inserted_count = process_resume_csv(content)
 
         return {
-            "message": f"{filename}에서 {inserted_count}개의 유효한 이력서를 저장했습니다.",
-            "file": filename,
+            "message": f"{file.filename}에서 {inserted_count}개의 유효한 이력서를 저장했습니다.",
+            "file": file.filename,
             "inserted": inserted_count
         }
 
     except Exception as e:
         logging.error(f"[CSV 이력서 처리 실패] {e}")
         raise HTTPException(500, str(e))
+
     

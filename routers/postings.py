@@ -90,10 +90,6 @@ async def match_job_posting_summary(job_posting: UploadFile = File(...)):
     }
 
 
-
-
-
-
 # ==== 채용공고 PDF 일괄 처리 ==== 채용공고는 하나씩 올리는게 번거로워 document에 있는 폴더의 pdf를 등록하게끔 해놨습니다. 나중에 수정 예정
 @router.post("/upload_postings_pdf")
 async def store_all_documents_endpoint_async():
