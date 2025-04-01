@@ -77,13 +77,8 @@ async def match_job_posting_summary(job_posting: UploadFile = File(...)):
         })
 
     return {
-        "message": "이력서 매칭 및 GPT 요약 결과입니다.",
         "matching_resumes": sorted(results, key=lambda x: x["gpt_evaluation"]["total_score"], reverse=True)
     }
-
-
-
-
 
 
 
