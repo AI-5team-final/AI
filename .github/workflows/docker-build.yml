@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "ai/**"  # ai 디렉토리 내 변경 있을 때만 실행
 
 env:
   DOCKER_HUB_REPOSITORY: sonyeoul/ai-server
