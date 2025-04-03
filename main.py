@@ -18,10 +18,9 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(resumes.router, prefix="/resume", tags=["Resume"])
-app.include_router(postings.router, prefix="/posting", tags=["Posting"])
+app.include_router(resumes.router, prefix="/resumes", tags=["Resume"])
+app.include_router(postings.router, prefix="/postings", tags=["Posting"])
 app.include_router(agent.router, prefix="/agent", tags=["Agent"])
-
 
 @app.get("/")
 async def root():

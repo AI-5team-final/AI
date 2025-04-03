@@ -72,6 +72,7 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
 @router.post("/upload-pdf")
 async def upload_pdf_endpoint(resume: UploadFile = File(...)):
     try:
+        print("저장요청")
         resume_text = await extract_text_from_uploadfile(resume)
         if not resume_text or len(resume_text.strip()) < 10:
             raise ResumeTextMissingException()
@@ -129,9 +130,7 @@ async def compare_resume_posting(
         feedback = "AI Agent 분석 실패"
 
     return {
-        "message": "이력서-공고 비교 완료",
         "gpt_evaluation": evaluation_result,
-        "agent_feedback": feedback
     }
 
 
