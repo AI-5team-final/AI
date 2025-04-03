@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "ai/**"  # ai 디렉토리 내 변경 있을 때만 실행
 
 env:
   DOCKER_HUB_REPOSITORY: sonyeoul/ai-server
@@ -30,7 +28,7 @@ jobs:
             --platform linux/amd64 \
             -t ${{ env.DOCKER_HUB_REPOSITORY }}:latest \
             -t ${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.sha }} \
-            -f ai/Dockerfile ./ai \
+            -f AI/Dockerfile ./AI \
             --push
 
       - name: Notify Discord
