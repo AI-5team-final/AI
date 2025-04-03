@@ -1,6 +1,5 @@
 from typing import List, Dict, Any
 import os
-import openai
 import pandas as pd
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure
@@ -77,7 +76,6 @@ def process_resume_csv(filepath: str) -> int:
             try:
                 # 전체 텍스트를 하나의 문자열로
                 original_text = " ".join(str(v).strip() for v in row.values if pd.notnull(v))
-
                 name = row.get("name", "").strip()
                 skills = row.get("skills", "").strip()
                 if not name or not skills:
@@ -139,7 +137,8 @@ async def search_similar_resumes_with_score(query: str, top_k: int = 5) -> List[
         },
         {
             "$project": {
-                "structured": "$structured",  
+                "structured": "$structured",
+                "original_text": "$original_text",   
                 "score": {"$meta": "vectorSearchScore"}
             }
         }

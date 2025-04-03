@@ -2,7 +2,6 @@ from fastapi import APIRouter,  HTTPException
 from pydantic import BaseModel
 from services.agent_service import run_resume_agent
 from exception.base import GptEvaluationNotValidException, AIAnalylizeException
-
 import logging
 
 router = APIRouter()

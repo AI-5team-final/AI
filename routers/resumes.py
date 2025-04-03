@@ -14,7 +14,7 @@ from exception.base import (
     JobSearchException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
     ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException
 )
-import os, asyncio, logging
+import asyncio, logging
 
 router = APIRouter()
 

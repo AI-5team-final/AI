@@ -17,7 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # 라우터 등록
 app.include_router(resumes.router, prefix="/resumes", tags=["Resume"])
 app.include_router(postings.router, prefix="/postings", tags=["Posting"])

@@ -11,7 +11,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         except Exception as e:
-            error_message = f"🚨 서버 오류 발생\nURL: {request.url}\nMethod: {request.method}\nError: {str(e)}"
+            error_message = f" 서버 오류 발생\nURL: {request.url}\nMethod: {request.method}\nError: {str(e)}"
             await send_error_to_discord(error_message)
             return JSONResponse(status_code=500, content={"message": "서버 오류가 발생했습니다."})
 
