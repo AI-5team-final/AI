@@ -28,7 +28,7 @@ jobs:
             --platform linux/amd64 \
             -t ${{ env.DOCKER_HUB_REPOSITORY }}:latest \
             -t ${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.sha }} \
-            -f ai/Dockerfile ./ai \
+            -f AI/Dockerfile ./AI \
             --push
 
       - name: Notify Discord
