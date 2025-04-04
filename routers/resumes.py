@@ -79,6 +79,7 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
 @router.post("/upload-pdf")
 async def upload_pdf_endpoint(resume: UploadFile = File(...)):
     try:
+        print("저장요청")
         resume_text = await extract_text_from_uploadfile(resume)
         if not resume_text or len(resume_text.strip()) < 10:
             raise ResumeTextMissingException()
