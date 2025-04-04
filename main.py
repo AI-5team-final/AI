@@ -2,12 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import resumes, postings, agent
 from exception.handlers import register_exception_handlers
-from exception.discord import ExceptionMiddleware
+
 app = FastAPI()
 
 register_exception_handlers(app)
 
-app.add_middleware(ExceptionMiddleware)
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
@@ -18,10 +17,9 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(resumes.router, prefix="/resume", tags=["Resume"])
-app.include_router(postings.router, prefix="/posting", tags=["Posting"])
+app.include_router(resumes.router, prefix="/resumes", tags=["Resume"])
+app.include_router(postings.router, prefix="/postings", tags=["Posting"])
 app.include_router(agent.router, prefix="/agent", tags=["Agent"])
-
 
 @app.get("/")
 async def root():

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
@@ -9,7 +8,7 @@ from exception.base import AIAnalylizeException
 load_dotenv()
 
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     temperature=0.3,
     max_retries=3,
     request_timeout=60,

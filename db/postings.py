@@ -103,6 +103,7 @@ async def search_similar_documents_with_score(query: str, top_k: int = 5) -> Lis
         },
         {
             "$project": {
+                "_id": 1,
                 "title": 1,
                 "description": 1,
                 "url": 1,

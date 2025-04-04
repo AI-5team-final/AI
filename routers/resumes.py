@@ -1,14 +1,14 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Path
+from fastapi import APIRouter, UploadFile, File, Path, Form
 from bson import ObjectId, errors
 from pydantic import BaseModel
 from services.ocr_service import extract_text_from_uploadfile
-from services.gpt_service import analyze_resume_job_matching, analyze_job_resume_matching
+from services.gpt_service import analyze_job_resume_matching , analyze_resume_job_matching
 from services.agent_service import run_resume_agent
 from db.resumes import (
     get_embedding, store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from db.postings import (
-    search_similar_documents_with_score
+    search_similar_documents_with_score, collection
 )
 from exception.base import (
     JobSearchException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
@@ -18,9 +18,12 @@ import asyncio, logging
 
 router = APIRouter()
 
-
 class ResumeSaveRequest(BaseModel):
     resume_text: str
+class ResumeAnalysisRequest(BaseModel):
+    resume_text: str 
+    job_id: str
+    
 
 # ==== 이력서 업로드 및 매칭 ====
 @router.post("/match_resume")
@@ -38,7 +41,7 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
 
     # GPT 평가 비동기 병렬 호출
     gpt_tasks = [
-        analyze_resume_job_matching(resume_text, m.get("description", ""))
+        analyze_job_resume_matching(resume_text, m.get("description", ""))
         for m in top_matches
     ]
     gpt_results = await asyncio.gather(*gpt_tasks, return_exceptions=True)
@@ -46,25 +49,29 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
     results = []
     for i, match in enumerate(top_matches):
         gpt_result = gpt_results[i]
-        evaluation = {
-            "total_score": 0,
-            "summary": "GPT 평가 실패"
-        }
+
+        # 기본값
+        total_score = 0
+        summary = "GPT 평가 실패"
+        gpt_answer = "분석 실패"
 
         if isinstance(gpt_result, dict):
-            evaluation["total_score"] = gpt_result.get("total_score", 0)
-            evaluation["summary"] = gpt_result.get("summary", "요약 실패")
+            total_score = gpt_result.get("total_score", 0)
+            summary = gpt_result.get("summary", "요약 실패")
+            gpt_answer = gpt_result.get("gpt_answer", "분석 실패")
+        else:
+            logging.error(f"[GPT 분석 실패 - {i}번째 공고]: {gpt_result}")
 
         results.append({
             "title": match.get("title", "제목 없음"),
-            "similarity_score": round(match.get("score", 0.0), 4),
-            "gpt_evaluation": evaluation
+            "total_score": total_score,
+            "summary": summary,
+            "gpt_answer": gpt_answer
         })
 
     return {
-            "message": "매칭 완료 (점수 순)",
-            "matching_jobs": sorted(results, key=lambda x: x["gpt_evaluation"].get("total_score", 0), reverse=True)
-}
+        "matching_jobs": sorted(results, key=lambda x: x.get("total_score", 0), reverse=True)
+    }
 
 
 
@@ -80,9 +87,9 @@ async def upload_pdf_endpoint(resume: UploadFile = File(...)):
         resume_id = await store_resume_from_pdf(resume_text, embedding)
         if not resume_id:
             raise MongoSaveException()
-
+        
         return {"object_id": resume_id}
-    
+
     except Exception as e:
         logging.error(f"[업로드 실패]: {e}")
         raise
@@ -116,23 +123,22 @@ async def compare_resume_posting(
 
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
-        if not evaluation_result or not isinstance(evaluation_result, dict) or 'summary' not in evaluation_result:
-            raise GptEvaluationFailedException
+
+        if not isinstance(evaluation_result, dict) or not all(
+            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
+        ):
+            raise GptEvaluationFailedException()
+
+        return {
+            "total_score": evaluation_result["total_score"],
+            "summary": evaluation_result["summary"],
+            "gpt_answer": evaluation_result["gpt_answer"]
+        }
+
     except Exception as e:
         logging.error(f"[GPT 분석 오류]: {e}")
         raise GptProcessingException()
 
-    try:
-        feedback = await run_resume_agent(evaluation_result)
-    except Exception as e:
-        logging.error(f"[Agent 분석 오류]: {e}")
-        feedback = "AI Agent 분석 실패"
-
-    return {
-        "message": "이력서-공고 비교 완료",
-        "gpt_evaluation": evaluation_result,
-        "agent_feedback": feedback
-    }
 
 
 # ==== CSV 이력서 업로드 ====
