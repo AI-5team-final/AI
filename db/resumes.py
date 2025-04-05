@@ -9,7 +9,6 @@ from openai import OpenAI
 import certifi
 import logging
 import asyncio
-
 # 환경설정 및 로깅
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
