@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  DOCKER_HUB_REPOSITORY: jungwoochan/fastapi-app
+  DOCKER_HUB_REPOSITORY: sonyeoul/fastapi-app
 
 jobs:
   build:
