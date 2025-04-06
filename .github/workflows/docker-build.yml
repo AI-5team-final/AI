@@ -34,7 +34,6 @@ jobs:
           docker buildx build --platform linux/amd64 \
             --tag ${{ env.DOCKER_HUB_REPOSITORY }}:latest \
             --tag ${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.sha }} \
-            --cache-from=type=registry,ref=${{ env.DOCKER_HUB_REPOSITORY }}:cache \
             --cache-to=type=inline \
             --push .
 
