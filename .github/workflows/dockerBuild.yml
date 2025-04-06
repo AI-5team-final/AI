@@ -1,0 +1,42 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_HUB_REPOSITORY: jungwoochan/fastapi-app
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Create .env file for local/CI use
+        run: |
+          echo "POSTGRES_URL=${{ secrets.POSTGRES_URL }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "ENV=production" >> .env
+          # 필요한 항목만 남기고 나머지 제거 (Spring 관련 X)
+
+      - name: Set up Docker BuildX
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          docker buildx build --platform linux/amd64 \
+            --tag ${{ env.DOCKER_HUB_REPOSITORY }}:latest \
+            --tag ${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.sha }} \
+            --cache-from=type=registry,ref=${{ env.DOCKER_HUB_REPOSITORY }}:cache \
+            --cache-to=type=inline \
+            --push .
+
