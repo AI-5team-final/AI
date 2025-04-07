@@ -51,19 +51,15 @@ async def match_resume_endpoint(resume: UploadFile = File(...)):
             "summary": "GPT 평가 실패"
         }
 
-        if isinstance(gpt_result, dict):
-            evaluation["total_score"] = gpt_result.get("total_score", 0)
-            evaluation["summary"] = gpt_result.get("summary", "요약 실패")
-
         results.append({
             "title": match.get("title", "제목 없음"),
-            "similarity_score": round(match.get("score", 0.0), 4),
-            "gpt_evaluation": evaluation
+            "total_score" : gpt_result.get("total_score", 0),
+            "summary" : gpt_result.get("summary", "요약 실패"),
+            "gpt_answer" : gpt_result.get("gpt_answer","설명 없음")
         })
 
     return {
-            "message": "매칭 완료 (점수 순)",
-            "matching_jobs": sorted(results, key=lambda x: x["gpt_evaluation"].get("total_score", 0), reverse=True)
+            "matching_jobs": sorted(results)
 }
 
 
