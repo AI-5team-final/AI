@@ -20,7 +20,6 @@ async def analyze_with_agent(req: AgentRequest):
     try:
         feedback = await run_resume_agent(evaluation_result)
         return {
-            "message": "AI 분석 완료",
             "agent_feedback": feedback
         }
     except Exception as e:

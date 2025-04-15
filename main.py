@@ -2,12 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import resumes, postings, agent
 from exception.handlers import register_exception_handlers
-from exception.discord import ExceptionMiddleware
+
 app = FastAPI()
 
 register_exception_handlers(app)
 
-app.add_middleware(ExceptionMiddleware)
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,

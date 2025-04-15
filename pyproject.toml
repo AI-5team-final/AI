@@ -18,7 +18,6 @@ python-multipart = "^0.0.6"
 # === MongoDB ===
 pymongo = "^4.11.0"
 certifi = "^2024.2.2"
-bson = "^0.5.10"
 
 # === OpenAI 및 LLM 관련 ===
 openai = "^1.68.0"
