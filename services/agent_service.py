@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
@@ -9,7 +8,7 @@ from exception.base import AIAnalylizeException
 load_dotenv()
 
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     temperature=0.3,
     max_retries=3,
     request_timeout=60,
@@ -53,7 +52,7 @@ def build_tasks(evaluation_result: str) -> List[Task]:
         description=""" 
         앞서 분석된 개선 항목을 기반으로 사용자가 어떤 순서로 학습하면 좋을지 제안하세요.
         리소스들을 초급 → 중급 순으로 정리하고, 2~4주 학습 플랜을 제안하세요.
-        결과는 반드시 한국어로 작성해주세요.
+        결과는 반드시 한국어로 작성하고 줄 바꿈 해서 마크다운으로 출력해줘.
         """,
         expected_output="주차별 학습 계획 및 추천 리소스",
         agent=learning_coach
