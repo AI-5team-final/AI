@@ -8,23 +8,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-HF_API_KEY = os.getenv("HF_API_KEY").strip()
-HF_API_URL = "https://api-inference.huggingface.co/models/ninky0/rezoom-llama3.1-8b-4bit-b16"
+RUNPOD_API_URL = os.getenv("RUNPOD_API_URL").strip()
 
 headers = {
-    "Authorization": f"Bearer {HF_API_KEY}",
     "Content-Type": "application/json"
 }
 
-async def call_hf_model_api() -> Optional[str]:
+async def call_runpod_model_api(input_text: str) -> Optional[str]:
     payload = {
-        "inputs": ""
+        "inputs": input_text
     }
 
     for attempt in range(3):
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(HF_API_URL, headers=headers, json=payload)
+                resp = await client.post(RUNPOD_API_URL, headers=headers, json=payload)
 
                 if resp.status_code == 503:
                     wait_sec = 10 + attempt * 5
@@ -34,7 +32,14 @@ async def call_hf_model_api() -> Optional[str]:
 
                 resp.raise_for_status()
                 output = resp.json()
-                return output[0]["generated_text"]
+                
+                if isinstance(output, list) and "generated_text" in output[0]:
+                    return output[0]["generated_text"]
+                elif isinstance(output, dict) and "output" in output:
+                    return output["output"]
+                else:
+                    logging.error(f"[RunPod 응답 포맷 오류]: 예상치 못한 형식 - {output}")
+                    return None
 
         except httpx.HTTPStatusError as e:
             logging.error(f"[모델 응답 오류]: {e.response.status_code} - {e.response.text}")
@@ -54,19 +59,20 @@ def _extract_score_from_result(xml_string: str) -> int:
 
 async def analyze_job_resume_matching(resume_text: str, job_text: str) -> dict:
     try:
-        raw = await call_hf_model_api()
-        logging.info(f"[HF 응답]: {raw}")
+        input_prompt = resume_text + "\n\n" + job_text  # 모델 학습 형식에 따라 조정 가능
+        raw = await call_runpod_model_api(input_prompt)
+        logging.info(f"[RunPod 응답]: {raw}")
 
         if not raw:
-            raise ValueError("모델 응답이 비었습니다.")
+            raise ValueError("RunPod 모델 응답이 비었습니다.")
 
         return {
             "result": raw.strip()
         }
 
     except Exception as e:
-        logging.error(f"[모델 호출 또는 응답 실패]: {e}")
+        logging.error(f"[RunPod 모델 추론 실패]: {e}")
         return {
-            "result": "<result><total_score>0</total_score><summary>모델 호출 실패</summary></result>"
+            "result": "<result><total_score>0</total_score><summary>RunPod 모델 호출 실패</summary></result>"
         }
 
