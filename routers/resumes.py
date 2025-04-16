@@ -4,25 +4,20 @@ from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
 from services.model_service import _extract_score_from_result, analyze_job_resume_matching
-from db.postings import store_job_posting
+from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
-    search_similar_resumes_with_score, store_resume_from_pdf, process_resume_csv, resumes_collection
+    store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from exception.base import (
     SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
     ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException ,JobPostingTextMissingException
 )
 import asyncio, logging
+from services.model_service import call_runpod_worker_api
 
 router = APIRouter()
 
-class ResumeSaveRequest(BaseModel):
-    resume_text: str
-class ResumeAnalysisRequest(BaseModel):
-    resume_text: str 
-    job_id: str
-    
-    
+
 
 @router.post("/match_resume")
 async def match_resume(job_posting: UploadFile = File(...)):
@@ -31,9 +26,9 @@ async def match_resume(job_posting: UploadFile = File(...)):
     if not posting_text or len(posting_text.strip()) < 10:
         raise JobPostingTextMissingException()
 
-    # 2. 유사한 이력서 검색
+    # 2. 유사한 채용공고 검색
     try:
-        top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)
+        top_matches = await search_similar_postings_with_score(posting_text, top_k=5)
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 채용공고 검색 실패]: {e}")
@@ -41,7 +36,7 @@ async def match_resume(job_posting: UploadFile = File(...)):
 
     # 3. 모델 평가 비동기 실행
     model_tasks = [
-        analyze_job_resume_matching(
+        call_runpod_worker_api(
             resume_text=match.get("original_text", ""),
             job_text=posting_text
         )
@@ -66,11 +61,11 @@ async def match_resume(job_posting: UploadFile = File(...)):
             "result": raw_result,
             "startDay": match.get("startDay", ""),
             "endDay": match.get("endDay", ""),
-            "total_score":score   # sort후 제거 (임시)
+            "total_score":score
         })
 
     final_results = [
-        {k: v for k, v in item.items() if k != "total_score"} # 총점 제외하고 새로운 딕셔너리 만듬
+        {k: v for k, v in item.items() if k != "total_score"}
         for item in sorted(results, key=lambda x: x["total_score"], reverse=True)
     ]
 
@@ -163,21 +158,18 @@ async def compare_resume_posting(
         raise BothNotFoundException()
 
     try:
-        evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
+        # RunPod Worker로 모델 평가 요청
+        evaluation_result = await call_runpod_worker_api(resume_text, posting_text)
 
-        if not isinstance(evaluation_result, dict) or not all(
-            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
-        ):
+        if not isinstance(evaluation_result, dict) or not "result" in evaluation_result:
             raise GptEvaluationFailedException()
 
         return {
-            "total_score": evaluation_result["total_score"],
-            "summary": evaluation_result["summary"],
-            "gpt_answer": evaluation_result["gpt_answer"]
+            "result": evaluation_result["result"]
         }
 
     except Exception as e:
-        logging.error(f"[GPT 분석 오류]: {e}")
+        logging.error(f"[RunPod 분석 오류]: {e}")
         raise GptProcessingException()
 
 
