@@ -29,6 +29,10 @@ class GptProcessingException(HTTPException):
     def __init__(self):
         super().__init__(status_code=500, detail="GPT 평가 중 오류 발생")
 
+class ModelProcessingException(HTTPException):
+    def __init__(self):
+        super().__init__(status_code=500, detail="모델 평가 중 오류 발생")
+
 class MongoSaveException(HTTPException):
     def __init__(self):
         super().__init__(status_code=500, detail="MongoDB 저장 실패")

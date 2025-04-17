@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File
 from services.ocr_service import extract_text_from_uploadfile, extract_text_from_path
-from services.model_service import analyze_job_resume_matching , _extract_score_from_result
+from services.model_service import _extract_score_from_result
 from db.resumes import search_similar_resumes_with_score
 from db.postings import store_job_posting, get_embedding_async, search_similar_postings_with_score
 from exception.base import (
@@ -9,7 +9,6 @@ from exception.base import (
 from services.model_service import call_runpod_worker_api
 import os, time, asyncio, re
 import logging
-from pydantic import BaseModel 
 
 router = APIRouter()
 PDF_DIR = "document"
@@ -42,7 +41,7 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
 
     # 2. 유사한 이력서 검색
     try:
-        top_matches = await search_similar_postings_with_score(posting_text, top_k=5)  # 유사한 이력서 검색
+        top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)  # 유사한 이력서 검색
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 이력서 검색 실패]: {e}")

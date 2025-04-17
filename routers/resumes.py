@@ -3,32 +3,35 @@ from bson import ObjectId, errors
 from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
-from services.model_service import _extract_score_from_result, analyze_job_resume_matching
+from services.model_service import _extract_score_from_result
 from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
     store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from exception.base import (
     SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
-    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException ,JobPostingTextMissingException
+    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, ModelProcessingException
 )
 import asyncio, logging
 from services.model_service import call_runpod_worker_api
+
+# 로깅 설정
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 router = APIRouter()
 
 
 
 @router.post("/match_resume")
-async def match_resume(job_posting: UploadFile = File(...)):
-    # 1. 채용공고 텍스트 추출
-    posting_text = await extract_text_from_uploadfile(job_posting)
-    if not posting_text or len(posting_text.strip()) < 10:
-        raise JobPostingTextMissingException()
+async def match_resume(resume: UploadFile = File(...)):
+    # 1. 이력서 텍스트 추출
+    resume_text = await extract_text_from_uploadfile(resume)
+    if not resume_text or len(resume_text.strip()) < 10:
+        raise ResumeTextMissingException()
 
     # 2. 유사한 채용공고 검색
     try:
-        top_matches = await search_similar_postings_with_score(posting_text, top_k=5)
+        top_matches = await search_similar_postings_with_score(resume_text, top_k=5)
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 채용공고 검색 실패]: {e}")
@@ -37,12 +40,13 @@ async def match_resume(job_posting: UploadFile = File(...)):
     # 3. 모델 평가 비동기 실행
     model_tasks = [
         call_runpod_worker_api(
-            resume_text=match.get("original_text", ""),
-            job_text=posting_text
+            resume_text=resume_text,  # 이력서 텍스트
+            job_text=match.get("original_text", "")  # 각 채용공고 텍스트
         )
         for match in top_matches
     ]
     model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
+    print(top_matches)
 
     # 4. 결과 정리
     results = []
@@ -158,19 +162,17 @@ async def compare_resume_posting(
         raise BothNotFoundException()
 
     try:
-        # RunPod Worker로 모델 평가 요청
+        # call_runpod_worker_api 함수가 XML 문자열을 반환한다고 가정
         evaluation_result = await call_runpod_worker_api(resume_text, posting_text)
 
-        if not isinstance(evaluation_result, dict) or not "result" in evaluation_result:
-            raise GptEvaluationFailedException()
-
+        # XML 문자열을 그대로 반환
         return {
-            "result": evaluation_result["result"]
+            "result": evaluation_result
         }
 
     except Exception as e:
         logging.error(f"[RunPod 분석 오류]: {e}")
-        raise GptProcessingException()
+        raise ModelProcessingException()
 
 
 
@@ -186,9 +188,7 @@ async def upload_resume_csv(file: UploadFile = File(...)):
             "file": file.filename,
             "inserted": inserted_count
         }
-
+ 
     except Exception as e:
         logging.error(f"[CSV 이력서 처리 실패] {e}")
         raise ResumeTextMissingException()
-
-    
