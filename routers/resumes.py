@@ -13,10 +13,8 @@ from exception.base import (
     ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, ModelProcessingException
 )
 import asyncio, logging
-from services.model_service import call_runpod_worker_api
-
-# 로깅 설정
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+from services.model_service import analyze_job_resume_matching
+from datetime import date
 
 router = APIRouter()
 
@@ -39,7 +37,7 @@ async def match_resume(resume: UploadFile = File(...)):
 
     # 3. 모델 평가 비동기 실행
     model_tasks = [
-        call_runpod_worker_api(
+        analyze_job_resume_matching(
             resume_text=resume_text,  # 이력서 텍스트
             job_text=match.get("original_text", "")  # 각 채용공고 텍스트
         )
@@ -84,26 +82,26 @@ async def match_resume(resume: UploadFile = File(...)):
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
 async def upload_pdf_endpoint(
-    resume: UploadFile = File(...),
-    start_day: Optional[str] = Form(None),
-    end_day: Optional[str] = Form(None)
+    file: UploadFile = File(...),
+    startDay: Optional[date] = Form(None),
+    endDay: Optional[date] = Form(None)
 ):
     try:
         print("저장요청")
-        resume_text = await extract_text_from_uploadfile(resume)
+        text = await extract_text_from_uploadfile(file)
 
-        if not resume_text or len(resume_text.strip()) < 10:
+        if not text or len(text.strip()) < 10:
             raise ResumeTextMissingException()
 
         # 저장 경로 분기
-        if start_day and end_day:
+        if startDay and endDay:
             object_id = await store_job_posting(
-                job_text=resume_text,
-                start_day=start_day,
-                end_day=end_day
+                job_text=text,
+                startDay=startDay,
+                endDay=endDay
             )
         else:
-            object_id = await store_resume_from_pdf(resume_text)
+            object_id = await store_resume_from_pdf(text)
 
         if not object_id:
             raise MongoSaveException()
@@ -163,15 +161,19 @@ async def compare_resume_posting(
 
     try:
         # call_runpod_worker_api 함수가 XML 문자열을 반환한다고 가정
-        evaluation_result = await call_runpod_worker_api(resume_text, posting_text)
+        evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
 
-        # XML 문자열을 그대로 반환
+        if not isinstance(evaluation_result, dict) or not all(
+            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
+        ):
+            raise GptEvaluationFailedException()
+
         return {
             "result": evaluation_result
         }
 
     except Exception as e:
-        logging.error(f"[RunPod 분석 오류]: {e}")
+        logging.error(f"[GPT 분석 오류]: {e}")
         raise ModelProcessingException()
 
 

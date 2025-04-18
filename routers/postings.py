@@ -2,11 +2,11 @@ from fastapi import APIRouter, UploadFile, File
 from services.ocr_service import extract_text_from_uploadfile, extract_text_from_path
 from services.model_service import _extract_score_from_result
 from db.resumes import search_similar_resumes_with_score
-from db.postings import store_job_posting, get_embedding_async, search_similar_postings_with_score
+from db.postings import store_job_posting, get_embedding_async
 from exception.base import (
  JobPostingTextMissingException, SimilarFoundException
 )   
-from services.model_service import call_runpod_worker_api
+from services.model_service import analyze_job_resume_matching
 import os, time, asyncio, re
 import logging
 
@@ -49,7 +49,7 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
 
     # 3. 모델 평가 비동기 실행 (이제 RunPod Worker로 추론 요청)
     model_tasks = [
-        call_runpod_worker_api(
+        analyze_job_resume_matching(
             resume_text=match.get("original_text", ""),  # 이력서 텍스트
             job_text=posting_text  # 채용공고 텍스트
         )
