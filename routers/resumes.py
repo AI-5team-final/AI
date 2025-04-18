@@ -13,7 +13,7 @@ from exception.base import (
     ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException ,JobPostingTextMissingException
 )
 import asyncio, logging
-
+from datetime import datetime
 router = APIRouter()
 
 class ResumeSaveRequest(BaseModel):
@@ -80,7 +80,11 @@ async def match_resume(job_posting: UploadFile = File(...)):
 
 
 
-
+def parse_date(date_str: str):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
 
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
@@ -98,10 +102,12 @@ async def upload_pdf_endpoint(
 
         # 저장 경로 분기
         if start_day and end_day:
+            start_date = parse_date(start_day)
+            end_date = parse_date(end_day)
             object_id = await store_job_posting(
                 job_text=resume_text,
-                start_day=start_day,
-                end_day=end_day
+                start_day=start_date,
+                end_day=end_date
             )
         else:
             object_id = await store_resume_from_pdf(resume_text)

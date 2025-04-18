@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from typing import Optional
 import certifi
 from openai import OpenAI
-
+from datetime import datetime, date, time
 # 환경 설정
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
@@ -65,15 +65,15 @@ def _sync_get_embedding(text: str) -> List[float]:
         return []
 
 # 채용공고 저장
-async def store_job_posting(job_text: str, startDay: str, endDay: str) -> str:
+async def store_job_posting(job_text: str, start_day: date, end_day: date) -> str:
     try:
         embedding = await get_embedding_async(job_text)
         doc = {
             "original_text": job_text,
             "embedding": embedding,
             "source": "pdf",
-            "startDay": startDay,
-            "endDay": endDay
+            "startDay": datetime.combine(start_day, time.min),
+            "endDay": datetime.combine(end_day, time.min)      
         }
         result = postings_collection.insert_one(doc)
         return str(result.inserted_id)
