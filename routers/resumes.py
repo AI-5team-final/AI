@@ -21,6 +21,7 @@ router = APIRouter()
 @router.post("/match_resume")
 async def match_resume(resume: UploadFile = File(...)):
     # 1. 이력서 텍스트 추출
+    print("이투채 시작")
     resume_text = await extract_text_from_uploadfile(resume)
     if not resume_text or len(resume_text.strip()) < 10:
         raise ResumeTextMissingException()
@@ -49,8 +50,8 @@ async def match_resume(resume: UploadFile = File(...)):
         model_result = model_results[i]
 
         # 모델 결과가 <result> 태그로 시작하는지 확인
-        if isinstance(model_result, dict) and "markup" in model_result:
-            raw_result = model_result["markup"]
+        if isinstance(model_result, dict) and "data" in model_result:
+            raw_result = model_result["data"]
             score = _extract_score_from_result(raw_result)
         else:
             raw_result = "모델 평가 실패 ~~"
@@ -66,7 +67,8 @@ async def match_resume(resume: UploadFile = File(...)):
 
     # total_score 순으로 정렬
     final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
-
+    print("이투채 공고5개")
+    print(final_results)
     # total_score를 제외하고 반환
     return {
         "matching_resumes": [
