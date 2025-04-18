@@ -1,49 +1,18 @@
-import httpx
 import asyncio
 import aiohttp
 import logging
 import os
 import xml.etree.ElementTree as ET
+import re
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from xml.etree.ElementTree import Element, tostring
+from xml.dom import minidom
+
 load_dotenv()
 
-HF_API_KEY = os.getenv("HF_API_KEY")
-HF_API_URL = "https://api-inference.huggingface.co/models/ninky0/rezoom-llama3.1-8b-4bit-b16"
 
-headers = {
-    "Authorization": f"Bearer {HF_API_KEY}",
-    "Content-Type": "application/json"
-}
-
-async def call_hf_model_api() -> Optional[str]:
-    payload = {
-        "inputs": ""
-    }
-
-    for attempt in range(3):
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(HF_API_URL, headers=headers, json=payload)
-
-                if resp.status_code == 503:
-                    wait_sec = 10 + attempt * 5
-                    logging.warning(f"[모델 로딩 중] {wait_sec}초 후 재시도 ({attempt+1}/3)")
-                    await asyncio.sleep(wait_sec)
-                    continue
-
-                resp.raise_for_status()
-                output = resp.json()
-                return output[0]["generated_text"]
-
-        except httpx.HTTPStatusError as e:
-            logging.error(f"[모델 응답 오류]: {e.response.status_code} - {e.response.text}")
-        except Exception as e:
-            logging.error(f"[모델 호출 실패]: {e}")
-            break
-
-    return None
 
 # ==== total_score 순 sorting할때 ====
 def _extract_score_from_result(xml_string: str) -> int:
@@ -116,7 +85,7 @@ async def send_to_runpod(resume_text: str, job_text: str) -> dict:
         logging.info(f"[INFO] RunPod 작업 생성됨: ID = {job_id}")
 
         # Step 2: 상태 polling (최대 30회, 4초 간격 = 2분)
-        for attempt in range(30):
+        for attempt in range(150):
             await asyncio.sleep(4)
 
             async with aiohttp.ClientSession() as session:
@@ -141,9 +110,7 @@ async def send_to_runpod(resume_text: str, job_text: str) -> dict:
             "result": "<result><total_score>0</total_score><summary>RunPod 평가 실패</summary></result>"
         }
 
-import re
-from xml.etree.ElementTree import Element, tostring
-from xml.dom import minidom
+
 
 def clean_and_prettify_xml_and_parse(raw: str) -> tuple[str, dict]:
     """
