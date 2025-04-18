@@ -165,19 +165,12 @@ async def compare_resume_posting(
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
 
-        if not isinstance(evaluation_result, dict) or not all(
-            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
-        ):
-            raise GptEvaluationFailedException()
-
         return {
-            "total_score": evaluation_result["total_score"],
-            "summary": evaluation_result["summary"],
-            "gpt_answer": evaluation_result["gpt_answer"]
+            "result": evaluation_result
         }
 
     except Exception as e:
-        logging.error(f"[GPT 분석 오류]: {e}")
+        logging.error(f"[런팟 오류]: {e}")
         raise GptProcessingException()
 
 
