@@ -1,14 +1,14 @@
-import asyncio
 import logging
 from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
 from typing import List
 from dotenv import load_dotenv
+from exception.base import AIAnalylizeException
 
 load_dotenv()
 
 llm = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     temperature=0.3,
     max_retries=3,
     request_timeout=60,
@@ -89,4 +89,4 @@ async def run_resume_agent(evaluation_result: str) -> str:
 
     except Exception as e:
         logging.error(f"AI Agent 실행 중 오류 발생: {e}")
-        return "AI Agent 분석 실패"
+        raise AIAnalylizeException()
