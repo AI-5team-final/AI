@@ -10,7 +10,7 @@ from db.resumes import (
 )
 from exception.base import (
     SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
-    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, ModelProcessingException
+    ResumeNotFoundException ,BothNotFoundException, ModelProcessingException
 )
 import asyncio, logging
 from services.model_service import analyze_job_resume_matching
@@ -44,35 +44,37 @@ async def match_resume(resume: UploadFile = File(...)):
         for match in top_matches
     ]
     model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
-    print(top_matches)
 
     # 4. 결과 정리
     results = []
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
 
-        raw_result = "<result><total_score>0</total_score><summary>모델 평가 실패</summary></result>"
-        score = 0
-
-        if isinstance(model_result, str) and model_result.strip().startswith("<result>"):
-            raw_result = model_result.strip()
+        # 모델 결과가 <result> 태그로 시작하는지 확인
+        if isinstance(model_result, dict) and "markup" in model_result:
+            raw_result = model_result["markup"]
             score = _extract_score_from_result(raw_result)
-        
+        else:
+            raw_result = "모델 평가 실패 ~~"
+            score = 0
+
         results.append({
             "object_id": str(match.get("_id")),
             "result": raw_result,
             "startDay": match.get("startDay", ""),
             "endDay": match.get("endDay", ""),
-            "total_score":score
+            "total_score": score
         })
 
-    final_results = [
-        {k: v for k, v in item.items() if k != "total_score"}
-        for item in sorted(results, key=lambda x: x["total_score"], reverse=True)
-    ]
+    # total_score 순으로 정렬
+    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
 
+    # total_score를 제외하고 반환
     return {
-    "matching_resumes": final_results
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
+        ]
     }
 
 
@@ -160,20 +162,14 @@ async def compare_resume_posting(
         raise BothNotFoundException()
 
     try:
-        # call_runpod_worker_api 함수가 XML 문자열을 반환한다고 가정
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
-
-        if not isinstance(evaluation_result, dict) or not all(
-            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
-        ):
-            raise GptEvaluationFailedException()
 
         return {
             "result": evaluation_result
         }
 
     except Exception as e:
-        logging.error(f"[GPT 분석 오류]: {e}")
+        logging.error(f"[런팟 오류]: {e}")
         raise ModelProcessingException()
 
 

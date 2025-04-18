@@ -9,15 +9,8 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from xml.etree.ElementTree import Element, tostring
 from xml.dom import minidom
+
 load_dotenv()
-
-HF_API_KEY = os.getenv("HF_API_KEY")
-HF_API_URL = "https://api-inference.huggingface.co/models/ninky0/rezoom-llama3.1-8b-4bit-b16"
-
-headers = {
-    "Authorization": f"Bearer {HF_API_KEY}",
-    "Content-Type": "application/json"
-}
 
 
 

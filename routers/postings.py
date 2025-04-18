@@ -62,29 +62,29 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
 
-        # 기본적으로 모델 평가 실패 결과
-        raw_result = "<result><total_score>0</total_score><summary>모델 평가 실패</summary></result>"  # 기본 평가 결과
-        score = 0
-
-        # 모델 응답이 <result> 형식일 경우
-        if isinstance(model_result, str) and model_result.strip().startswith("<result>"):
-            raw_result = model_result.strip()
-            score = _extract_score_from_result(raw_result)  # 점수 추출
+        # 모델 결과가 <result> 태그로 시작하는지 확인
+        if isinstance(model_result, dict) and "markup" in model_result:
+            raw_result = model_result["markup"]
+            score = _extract_score_from_result(raw_result)
+        else:
+            raw_result = "모델 평가 실패 ~~ "
+            score = 0
 
         results.append({
-            "object_id": str(match.get("_id")),  # 이력서의 MongoDB _id
+            "object_id": str(match.get("_id")),
             "result": raw_result,
-            "total_score": score  # 임시로 총점 포함 (정렬 후 제외)
+            "total_score": score
         })
 
-    # 결과를 총점 기준으로 내림차순 정렬 후 총점 제외
-    final_results = [
-        {k: v for k, v in item.items() if k != "total_score"}  # 총점 제외
-        for item in sorted(results, key=lambda x: x["total_score"], reverse=True)
-    ]
+    # total_score 순으로 정렬
+    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
 
+    # total_score를 제외하고 반환
     return {
-        "matching_resumes": final_results  # 최종 결과 반환
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
+        ]
     }
 
 
