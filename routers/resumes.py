@@ -3,19 +3,17 @@ from bson import ObjectId, errors
 from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
-from services.model_service import _extract_score_from_result
+from services.model_service import _extract_score_from_result, analyze_job_resume_matching
 from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
     store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from exception.base import (
     SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
-    ResumeNotFoundException ,BothNotFoundException, ModelProcessingException
+    ResumeNotFoundException ,BothNotFoundException, ModelProcessingException, HTTPException
 )
 import asyncio, logging
-from services.model_service import analyze_job_resume_matching
-from datetime import date
-
+from datetime import datetime
 router = APIRouter()
 
 
@@ -79,14 +77,18 @@ async def match_resume(resume: UploadFile = File(...)):
 
 
 
-
+def parse_date(date_str: str):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
 
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
 async def upload_pdf_endpoint(
     file: UploadFile = File(...),
-    startDay: Optional[date] = Form(None),
-    endDay: Optional[date] = Form(None)
+    startDay: Optional[str] = Form(None),
+    endDay: Optional[str] = Form(None)
 ):
     try:
         print("저장요청")
@@ -97,10 +99,12 @@ async def upload_pdf_endpoint(
 
         # 저장 경로 분기
         if startDay and endDay:
+            start_date = parse_date(startDay)
+            end_date = parse_date(endDay)
             object_id = await store_job_posting(
                 job_text=text,
-                startDay=startDay,
-                endDay=endDay
+                start_day=start_date,
+                end_day=end_date
             )
         else:
             object_id = await store_resume_from_pdf(text)
