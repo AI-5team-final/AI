@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import resumes, postings, agent
+from routers import resumes, postings, agent, agent_router
 from exception.handlers import register_exception_handlers
 
 app = FastAPI()
@@ -18,9 +18,10 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(resumes.router, prefix="/resumes", tags=["Resume"])
-
 app.include_router(postings.router, prefix="/postings", tags=["Posting"])
 app.include_router(agent.router, prefix="/agent", tags=["Agent"])
+#테스트
+app.include_router(agent_router.router, prefix="/agent-test", tags=["AgentTest"])
 
 @app.get("/")
 async def root():
