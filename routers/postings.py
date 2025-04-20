@@ -1,16 +1,18 @@
 from fastapi import APIRouter, UploadFile, File
 from services.ocr_service import extract_text_from_uploadfile, extract_text_from_path
-from services.gpt_service import analyze_resume_job_matching
+from services.model_service import _extract_score_from_result
 from db.resumes import search_similar_resumes_with_score
 from db.postings import store_job_posting, get_embedding_async
 from exception.base import (
  JobPostingTextMissingException, SimilarFoundException
 )   
+from services.model_service import analyze_job_resume_matching
 import os, time, asyncio, re
 import logging
 
 router = APIRouter()
 PDF_DIR = "document"
+
 
 # ==== 채용공고 PDF OCR + 임베딩 저장 ====
 async def process_pdf_async(pdf_file: str):
@@ -27,57 +29,62 @@ async def process_pdf_async(pdf_file: str):
         logging.error(f"[{filename} 처리 실패] {e}")
         return filename, False
 
-# def extract_from_original_text(text: str) -> dict:
-#     """비정형 original_text에서 이름 추출"""
-#     name_match = re.search(r"(?:이름[:：]?\s*)?([가-힣]{2,4})", text)
-#     return {
-#         "name": name_match.group(1) if name_match else "이름 없음"
-#     }
 
 
-@router.post("/match_job_posting_summary")
-async def match_job_posting_summary(job_posting: UploadFile = File(...)):
-    posting_text = await extract_text_from_uploadfile(job_posting)
+# ==== 채용공고 이력서 매칭 ====
+@router.post("/match_job_posting")
+async def match_job_posting(job_posting: UploadFile = File(...)):
+    # 1. 채용공고 텍스트 추출
+    posting_text = await extract_text_from_uploadfile(job_posting)  # 채용공고 텍스트 추출
     if not posting_text or len(posting_text.strip()) < 10:
-        raise JobPostingTextMissingException()
+        raise JobPostingTextMissingException()  # 텍스트가 너무 짧으면 예외 발생
 
+    # 2. 유사한 이력서 검색
     try:
-        top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)
+        top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)  # 유사한 이력서 검색
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 이력서 검색 실패]: {e}")
-        raise SimilarFoundException()
+        raise SimilarFoundException()  # 예외 발생 시
 
-    # GPT 평가 요청
-    gpt_tasks = [
-        analyze_resume_job_matching(
-            resume_text=match.get("original_text", ""),
-            job_text=posting_text
+    # 3. 모델 평가 비동기 실행 (이제 RunPod Worker로 추론 요청)
+    model_tasks = [
+        analyze_job_resume_matching(
+            resume_text=match.get("original_text", ""),  # 이력서 텍스트
+            job_text=posting_text  # 채용공고 텍스트
         )
         for match in top_matches
     ]
-    gpt_results = await asyncio.gather(*gpt_tasks, return_exceptions=True)
+    model_results = await asyncio.gather(*model_tasks, return_exceptions=True)  # 비동기 평가 수행
 
-    # 결과 정리
+    # 4. 결과 정리
     results = []
     for i, match in enumerate(top_matches):
-        gpt_result = gpt_results[i]
-        evaluation = {
-            "total_score": 0,
-            "summary": "GPT 평가 실패"
-        }
+        model_result = model_results[i]
 
-        if isinstance(gpt_result, dict):
-            evaluation["total_score"] = gpt_result.get("total_score", 0)
-            evaluation["summary"] = gpt_result.get("summary", "요약 실패")
+        # 모델 결과가 <result> 태그로 시작하는지 확인
+        if isinstance(model_result, dict) and "markup" in model_result:
+            raw_result = model_result["markup"]
+            score = _extract_score_from_result(raw_result)
+        else:
+            raw_result = "모델 평가 실패 ~~ "
+            score = 0
 
         results.append({
-            "similarity_score": round(match.get("score", 0.0), 4),
-            "gpt_evaluation": evaluation
+            "object_id": str(match.get("_id")),
+            "result": raw_result,
+            "total_score": score
         })
 
+    # total_score 순으로 정렬
+    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+
+    # total_score를 제외하고 반환
     return {
-        "matching_resumes": sorted(results, key=lambda x: x["gpt_evaluation"]["total_score"], reverse=True)
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
+        ]
     }
 
 
@@ -99,3 +106,5 @@ async def store_all_documents_endpoint_async():
         "failed": failed,
         "elapsed_time": round(time.time() - start, 2)
     }
+    
+    

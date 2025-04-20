@@ -8,19 +8,20 @@ router = APIRouter()
 
 
 class AgentRequest(BaseModel):
-    evaluation_result: str
+    gpt_answer: str
 
 
 @router.post("/analyze")
 async def analyze_with_agent(req: AgentRequest):
-    evaluation_result = req.evaluation_result.strip()
-    if not evaluation_result or len(evaluation_result) < 10:
+    gpt_answer = req.gpt_answer.strip() 
+    logging.info(f"gpt_answer: {gpt_answer}")
+    
+    if not gpt_answer or len(gpt_answer) < 10:
         raise GptEvaluationNotValidException()
 
     try:
-        feedback = await run_resume_agent(evaluation_result)
+        feedback = await run_resume_agent(gpt_answer)
         return {
-            "message": "AI 분석 완료",
             "agent_feedback": feedback
         }
     except Exception as e:

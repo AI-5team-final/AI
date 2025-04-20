@@ -1,99 +1,144 @@
 from fastapi import APIRouter, UploadFile, File, Path, Form
 from bson import ObjectId, errors
 from pydantic import BaseModel
+from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
-from services.gpt_service import analyze_job_resume_matching , analyze_resume_job_matching
-from services.agent_service import run_resume_agent
+from services.model_service import _extract_score_from_result, analyze_job_resume_matching
+from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
-    get_embedding, store_resume_from_pdf, process_resume_csv, resumes_collection
-)
-from db.postings import (
-    search_similar_documents_with_score, collection
+    store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from exception.base import (
-    JobSearchException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
-    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException
+    SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
+    ResumeNotFoundException ,BothNotFoundException, ModelProcessingException, HTTPException
 )
 import asyncio, logging
-
+from datetime import datetime
 router = APIRouter()
 
-class ResumeSaveRequest(BaseModel):
-    resume_text: str
-class ResumeAnalysisRequest(BaseModel):
-    resume_text: str 
-    job_id: str
-    
 
-# ==== 이력서 업로드 및 매칭 ====
+
 @router.post("/match_resume")
-async def match_resume_endpoint(resume: UploadFile = File(...)):
+async def match_resume(resume: UploadFile = File(...)):
+    # 1. 이력서 텍스트 추출
+    print("이투채 시작")
     resume_text = await extract_text_from_uploadfile(resume)
-    if not resume_text:
+    if not resume_text or len(resume_text.strip()) < 10:
         raise ResumeTextMissingException()
 
+    # 2. 유사한 채용공고 검색
     try:
-        top_matches = await search_similar_documents_with_score(resume_text, top_k=5)
-        logging.info(f"[유사 공고 수]: {len(top_matches)}")
+        top_matches = await search_similar_postings_with_score(resume_text, top_k=5)
+        logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
-        logging.error(f"[유사 공고 검색 실패]: {e}")
-        raise JobSearchException()
+        logging.error(f"[유사 채용공고 검색 실패]: {e}")
+        raise SimilarFoundException()
 
-    # GPT 평가 비동기 병렬 호출
-    gpt_tasks = [
-        analyze_job_resume_matching(resume_text, m.get("description", ""))
-        for m in top_matches
+    # 3. 모델 평가 비동기 실행
+    model_tasks = [
+        analyze_job_resume_matching(
+            resume_text=resume_text,  # 이력서 텍스트
+            job_text=match.get("original_text", "")  # 각 채용공고 텍스트
+        )
+        for match in top_matches
     ]
-    gpt_results = await asyncio.gather(*gpt_tasks, return_exceptions=True)
+    model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
 
+    # 4. 결과 정리
     results = []
     for i, match in enumerate(top_matches):
-        gpt_result = gpt_results[i]
+        model_result = model_results[i]
 
-        # 기본값
-        total_score = 0
-        summary = "GPT 평가 실패"
-        gpt_answer = "분석 실패"
-
-        if isinstance(gpt_result, dict):
-            total_score = gpt_result.get("total_score", 0)
-            summary = gpt_result.get("summary", "요약 실패")
-            gpt_answer = gpt_result.get("gpt_answer", "분석 실패")
+        # 모델 결과가 <result> 태그로 시작하는지 확인
+        if isinstance(model_result, dict) and "data" in model_result:
+            raw_result = model_result["data"]
+            score = _extract_score_from_result(raw_result)
         else:
-            logging.error(f"[GPT 분석 실패 - {i}번째 공고]: {gpt_result}")
+            raw_result = "모델 평가 실패 ~~"
+            score = 0
 
         results.append({
-            "title": match.get("title", "제목 없음"),
-            "total_score": total_score,
-            "summary": summary,
-            "gpt_answer": gpt_answer
+            "object_id": str(match.get("_id")),
+            "result": raw_result,
+            "startDay": match.get("startDay", ""),
+            "endDay": match.get("endDay", ""),
+            "total_score": score
         })
 
+    # total_score 순으로 정렬
+    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+    print("이투채 공고5개")
+    print(final_results)
+    # total_score를 제외하고 반환
     return {
-        "matching_jobs": sorted(results, key=lambda x: x.get("total_score", 0), reverse=True)
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
+        ]
     }
 
 
 
-# ==== 이력서 하나 저장 -> objectId 응답 ====
+def parse_date(date_str: str):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
+
+# # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
-async def upload_pdf_endpoint(resume: UploadFile = File(...)):
+async def upload_pdf_endpoint(
+    file: UploadFile = File(...),
+    startDay: Optional[str] = Form(None),
+    endDay: Optional[str] = Form(None)
+):
     try:
         print("저장요청")
-        resume_text = await extract_text_from_uploadfile(resume)
-        if not resume_text or len(resume_text.strip()) < 10:
+        text = await extract_text_from_uploadfile(file)
+
+        if not text or len(text.strip()) < 10:
             raise ResumeTextMissingException()
 
-        embedding = await get_embedding(resume_text) 
-        resume_id = await store_resume_from_pdf(resume_text, embedding)
-        if not resume_id:
+        # 저장 경로 분기
+        if startDay and endDay:
+            start_date = parse_date(startDay)
+            end_date = parse_date(endDay)
+            object_id = await store_job_posting(
+                job_text=text,
+                start_day=start_date,
+                end_day=end_date
+            )
+        else:
+            object_id = await store_resume_from_pdf(text)
+
+        if not object_id:
             raise MongoSaveException()
-        
-        return {"object_id": resume_id}
+
+        return {"object_id": object_id}
 
     except Exception as e:
         logging.error(f"[업로드 실패]: {e}")
         raise
+
+
+# @router.post("/upload-pdf")
+# async def upload_pdf_endpoint(resume: UploadFile = File(...)):
+#     try:
+#         print("저장요청")
+#         resume_text = await extract_text_from_uploadfile(resume)
+#         if not resume_text or len(resume_text.strip()) < 10:
+#             raise ResumeTextMissingException()
+
+#         embedding = await get_embedding(resume_text) 
+#         resume_id = await store_resume_from_pdf(resume_text, embedding)
+#         if not resume_id:
+#             raise MongoSaveException()
+        
+#         return {"object_id": resume_id}
+
+#     except Exception as e:
+#         logging.error(f"[업로드 실패]: {e}")
+#         raise
 
 # ==== 이력서 ObjectId로 하나 삭제 ====
 @router.delete("/delete_resume/{resume_id}")
@@ -125,20 +170,13 @@ async def compare_resume_posting(
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
 
-        if not isinstance(evaluation_result, dict) or not all(
-            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
-        ):
-            raise GptEvaluationFailedException()
-
         return {
-            "total_score": evaluation_result["total_score"],
-            "summary": evaluation_result["summary"],
-            "gpt_answer": evaluation_result["gpt_answer"]
+            "result": evaluation_result
         }
 
     except Exception as e:
-        logging.error(f"[GPT 분석 오류]: {e}")
-        raise GptProcessingException()
+        logging.error(f"[런팟 오류]: {e}")
+        raise ModelProcessingException()
 
 
 
@@ -154,9 +192,7 @@ async def upload_resume_csv(file: UploadFile = File(...)):
             "file": file.filename,
             "inserted": inserted_count
         }
-
+ 
     except Exception as e:
         logging.error(f"[CSV 이력서 처리 실패] {e}")
         raise ResumeTextMissingException()
-
-    
