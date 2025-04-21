@@ -109,7 +109,6 @@ async def upload_pdf_endpoint(
     endDay: Optional[str] = Form(None)
 ):
     try:
-        print("저장요청")
         text = await extract_text_from_uploadfile(file)
 
         if not text or len(text.strip()) < 10:
