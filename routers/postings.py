@@ -63,8 +63,8 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
         model_result = model_results[i]
 
         # 모델 결과가 <result> 태그로 시작하는지 확인
-        if isinstance(model_result, dict) and "markup" in model_result:
-            raw_result = model_result["markup"]
+        if isinstance(model_result, dict) and "data" in model_result:
+            raw_result = model_result["data"]
             score = _extract_score_from_result(raw_result)
         else:
             raw_result = "모델 평가 실패 ~~ "
@@ -81,7 +81,7 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
 
     # total_score를 제외하고 반환
     return {
-        "matching_resumes": [
+        "matching_resume": [
             {k: v for k, v in item.items() if k != "total_score"}
             for item in final_results
         ]

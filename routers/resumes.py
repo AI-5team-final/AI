@@ -14,42 +14,56 @@ from exception.base import (
 )
 import asyncio, logging
 from datetime import datetime
+import time
 router = APIRouter()
 
 
 
 @router.post("/match_resume")
 async def match_resume(resume: UploadFile = File(...)):
-    # 1. 이력서 텍스트 추출
+    total_start = time.perf_counter()  # 전체 측정 시작
+
     print("이투채 시작")
+    t1 = time.perf_counter()
     resume_text = await extract_text_from_uploadfile(resume)
+    t2 = time.perf_counter()
+
     if not resume_text or len(resume_text.strip()) < 10:
         raise ResumeTextMissingException()
 
+    # 1. 이력서 텍스트 추출 완료
+    print(f"⏱️ [1] 이력서 텍스트 추출: {t2 - t1:.2f}초")
+
     # 2. 유사한 채용공고 검색
     try:
+        t3 = time.perf_counter()
         top_matches = await search_similar_postings_with_score(resume_text, top_k=5)
+        t4 = time.perf_counter()
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
+        print(f"⏱️ [2] 유사 채용공고 검색: {t4 - t3:.2f}초")
     except Exception as e:
         logging.error(f"[유사 채용공고 검색 실패]: {e}")
         raise SimilarFoundException()
 
     # 3. 모델 평가 비동기 실행
+    t5 = time.perf_counter()
     model_tasks = [
         analyze_job_resume_matching(
-            resume_text=resume_text,  # 이력서 텍스트
-            job_text=match.get("original_text", "")  # 각 채용공고 텍스트
+            resume_text=resume_text,
+            job_text=match.get("original_text", "")
         )
         for match in top_matches
     ]
     model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
+    t6 = time.perf_counter()
+    print(f"⏱️ [3] 모델 평가 전체: {t6 - t5:.2f}초")
 
     # 4. 결과 정리
+    t7 = time.perf_counter()
     results = []
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
 
-        # 모델 결과가 <result> 태그로 시작하는지 확인
         if isinstance(model_result, dict) and "data" in model_result:
             raw_result = model_result["data"]
             score = _extract_score_from_result(raw_result)
@@ -65,11 +79,13 @@ async def match_resume(resume: UploadFile = File(...)):
             "total_score": score
         })
 
-    # total_score 순으로 정렬
     final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
-    print("이투채 공고5개")
-    print(final_results)
-    # total_score를 제외하고 반환
+    t8 = time.perf_counter()
+    print(f"⏱️ [4] 결과 정리 및 정렬: {t8 - t7:.2f}초")
+
+    total_end = time.perf_counter()
+    print(f"[총 소요 시간]: {total_end - total_start:.2f}초")
+
     return {
         "matching_resumes": [
             {k: v for k, v in item.items() if k != "total_score"}

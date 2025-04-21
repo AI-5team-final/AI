@@ -93,7 +93,7 @@ async def send_to_runpod(resume_text: str, job_text: str) -> dict:
                     status_data = await status_resp.json()
                     status = status_data.get("status")
 
-                    logging.info(f"[RunPod 상태 확인] {status} (시도 {attempt + 1}/30)")
+                    logging.info(f"[RunPod 상태 확인] {status} (시도 {attempt + 1}/150)")
 
                     if status == "COMPLETED":
                         result = status_data.get("output")
