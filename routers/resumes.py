@@ -81,13 +81,12 @@ async def match_resume(resume: UploadFile = File(...)):
         }
 
 
-
-
 def parse_date(date_str: str):
     try:
         return datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
+
 
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
@@ -98,9 +97,9 @@ async def upload_pdf_endpoint(
 ):
     try:
         print("저장요청")
-        resume_text  = await extract_text_from_uploadfile(resume)
+        text  = await extract_text_from_uploadfile(resume)
 
-        if not resume_text  or len(resume_text .strip()) < 10:
+        if not text  or len(text .strip()) < 10:
             raise ResumeTextMissingException()
 
         # 저장 경로 분기
@@ -108,12 +107,12 @@ async def upload_pdf_endpoint(
             start_date = parse_date(start_day)
             end_date = parse_date(end_day)
             object_id = await store_job_posting(
-                job_text=resume_text ,
+                job_text=text ,
                 start_day=start_date,
                 end_day=end_date
             )
         else:
-            object_id = await store_resume_from_pdf(resume_text )
+            object_id = await store_resume_from_pdf(text)
 
         if not object_id:
             raise MongoSaveException()
@@ -181,7 +180,6 @@ async def compare_resume_posting(
     except Exception as e:
         logging.error(f"[런팟 오류]: {e}")
         raise ModelProcessingException()
-
 
 
 # ==== CSV 이력서 업로드 ====
