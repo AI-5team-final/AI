@@ -197,7 +197,7 @@ workflow = StateGraph(AgentState)
 
 # 모든 Runnable 객체 선언
 init_node = RunnableLambda(init_state)
-decide_node = RunnableLambda(decide_path)
+# decide_node = RunnableLambda(decide_path)
 crew_generate_node = RunnableLambda(run_crew_agent_sync)
 verify_node = RunnableLambda(verify_output)
 return_result_node = RunnableLambda(return_result)
@@ -210,7 +210,7 @@ retry_check_node = RunnableLambda(retry_or_fail)
 
 # 노드 등록
 workflow.add_node("init", init_node)
-workflow.add_node("decide", decide_node)
+workflow.add_node("decide", decide_path)
 workflow.add_node("crew_generate", crew_generate_node)
 workflow.add_node("verify", verify_node)
 workflow.add_node("return_result", return_result_node)
@@ -231,8 +231,8 @@ workflow.add_conditional_edges(
         "improve": simple_feedback_gen_node,
         "crew": crew_generate_node
     },
-    # decide_path
-    lambda state: decide_path(state)
+    decide_path
+    # lambda state: decide_path(state)
 )
 
 workflow.add_edge("simple_feedback_gen", "simple_feedback_verify")
