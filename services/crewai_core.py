@@ -3,6 +3,9 @@ import time
 import json
 from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
+import re
+
+
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
 
@@ -43,7 +46,7 @@ def verify_crew_output(resume_eval: str, selfintro_eval: str, gap_text: str, pla
     [학습 로드맵]
     {plan_text}
 
-    응답은 아래 형식의 JSON으로 주세요:
+    응답은 반드시 다음 JSON 형식의 코드블럭으로만 주세요 (설명 없이):
     {{
         "verdict": "YES" 또는 "NO",
         "reason": "간단한 사유"
@@ -51,16 +54,10 @@ def verify_crew_output(resume_eval: str, selfintro_eval: str, gap_text: str, pla
     """
     raw = llm.invoke(prompt)
     content = raw.content if hasattr(raw, "content") else raw
+    logging.info(f"[verify_crew_output] LLM 응답 원문:\n{content}")
+    return extract_json_from_response(content)
 
-    try:
-        # JSON이 코드블록에 감싸져 있으므로 파싱 처리
-        json_start = content.find("{")
-        json_end = content.rfind("}") + 1
-        json_str = content[json_start:json_end]
-        return json.loads(json_str)
-    except Exception as e:
-        logging.warning(f"[verify_crew_output] JSON 파싱 실패: {e}")
-        return {"verdict": "NO", "reason": "JSON 형식이 아님"}
+    t
 
 
 # CrewAi 실행
@@ -146,3 +143,22 @@ def generate_simple_feedback(resume_eval: str, selfintro_eval: str) -> str:
         {selfintro_eval}
     """
     return llm.invoke(prompt)
+
+
+def extract_json_from_response(content: str) -> str:
+    try:
+        # 코드블록 안 JSON 찾기
+        matches = re.findall(r'```json\\s*({.*?})\\s*```', content, re.DOTALL)
+        if matches:
+            return json.loads(matches[0])
+        
+        # 일반 JSON 블럭 찾기
+        json_start = content.find('{')
+        json_end = content.rfind('}') + 1
+        if json_start != -1 and json_end != -1:
+            return json.loads(content[json_start:json_end])
+        
+    except Exception as e:
+        logging.warning(f"[extract_json] JSON 파싱 실패: {e}")
+
+    return {"verdict": "NO", "reason": "LLM 응답이 JSON 형식이 아님"}
