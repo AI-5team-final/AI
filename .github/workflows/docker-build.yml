@@ -36,4 +36,3 @@ jobs:
             --tag ${{ env.DOCKER_HUB_REPOSITORY }}:${{ github.sha }} \
             --cache-to=type=inline \
             --push .
-

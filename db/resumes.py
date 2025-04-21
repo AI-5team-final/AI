@@ -9,7 +9,6 @@ from openai import OpenAI
 import certifi
 import logging
 import asyncio
-
 # 환경설정 및 로깅
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
@@ -51,7 +50,7 @@ async def get_embedding(text: str) -> List[float]:
     return await asyncio.to_thread(_sync_get_embedding, text)
 
 # 사용자 이력서 저장
-async def store_resume_from_pdf(resume_text: str, embedding: List[float]) -> str:
+async def store_resume_from_pdf(resume_text: str) -> str:
     try:
         embedding = await get_embedding(resume_text)
         doc = {

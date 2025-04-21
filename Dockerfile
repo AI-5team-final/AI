@@ -13,7 +13,7 @@ ENV PATH="/root/.local/bin:$PATH"
 ENV POETRY_VIRTUALENVS_CREATE=false
 
 # 작업 디렉토리 설정
-WORKDIR /app
+WORKDIR /
 
 # pyproject.toml 및 poetry.lock 복사
 COPY pyproject.toml poetry.lock ./

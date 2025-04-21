@@ -202,7 +202,7 @@ async def analyze_job_resume_matching(resume_text: str, job_text: str) -> dict:
     JSON 답변 예시 : {{
      "total_score": 85,
      "summary": "핵심 강점: ... / 보완점: ... / 종합 의견: 추천",
-     "gpt_answer": "어떤 기준으로 점수를 매겼는지 상세하게 설명할 것"
+     "gpt_answer": "어떤 기준으로 점수를 매겼는지 이유와 함게 항목당 200자로 아주 상세하게 길게 설명해줘"
     }}
 
     평가 기준 :
@@ -277,6 +277,7 @@ async def analyze_job_resume_matching(resume_text: str, job_text: str) -> dict:
             "summary": "GPT 평가 실패",
             "gpt_answer": "평가 실패"
         }
+
 
     # try:
     #     raw = await call_gpt_api(prompt, temperature=0.3)
