@@ -109,7 +109,9 @@ async def search_similar_postings_with_score(query: str, top_k: int = 5) -> List
                 "title": 1,
                 "description": 1,
                 "url": 1,
-                "score": {"$meta": "vectorSearchScore"}
+                "score": {"$meta": "vectorSearchScore"},
+                "startDay":1,
+                "endDay":1
             }
         }
     ]
