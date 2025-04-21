@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.crewai_with_verification import analyze_resume_with_agent
 from exception.base import GptEvaluationNotValidException, AIAnalylizeException
 import logging
+from services.crewai_with_verification import run_graph_with_scores
 
 router = APIRouter()
 
@@ -10,10 +10,13 @@ router = APIRouter()
 class AgentRequest(BaseModel):
     resume_eval: str
     selfintro_eval: str
+    resume_score: int
+    selfintro_score: int
 
-
+    
 @router.post("/analyze-test")
 async def analyze_with_agent(req: AgentRequest):
+
     resume_eval = req.resume_eval.strip()
     selfintro_eval = req.selfintro_eval.strip()
     
@@ -22,9 +25,14 @@ async def analyze_with_agent(req: AgentRequest):
 
     if not resume_eval or not selfintro_eval:
         raise GptEvaluationNotValidException()
-
+    
     try:
-        feedback = await analyze_resume_with_agent(resume_eval, selfintro_eval)
+        feedback = await run_graph_with_scores(
+            resume_eval=resume_eval,
+            selfintro_eval=selfintro_eval,
+            resume_score=req.resume_score,
+            selfintro_score=req.selfintro_score
+        )
         return {
             "agent_feedback": feedback
         }
