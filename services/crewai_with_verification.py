@@ -14,7 +14,7 @@ async def run_graph_with_scores(resume_eval: str, selfintro_eval: str, resume_sc
         "resume_score": resume_score,
         "selfintro_score": selfintro_score
     })
-    print("final_result: "+result["final_result"])
+
     elapsed = time.time() - start
     logging.info(f"[run_graph_with_scores] LangGraph 실행 완료 - 총 소요시간: {elapsed:.2f}초")
 

@@ -1,6 +1,7 @@
 import logging
 import time
 import asyncio
+import json
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableLambda
 from typing import TypedDict, Literal
@@ -24,7 +25,7 @@ class AgentState(TypedDict):
     retry_count: int
     simple_feedback_text: str
     final_result: dict
-
+    evaluation: dict
 
 # ---- 2. 점수 등급 분류 함수 ----
 def classify_level(score):
@@ -55,22 +56,11 @@ def init_state(state: AgentState) -> AgentState:
     }
 
 # ---- 4. 조건 분기 Node: 등급 판단 ----
-# def decide_path(state: AgentState) -> dict:
-#     print("[decide_path] 분기 판단 중")
-#     logging.info("[decide_path] 분기 판단 중")
-#     rl = state["resume_level"]
-#     sl = state["selfintro_level"]
-#     result = "perfect" if rl == "상" and sl == "상" else "crew" if rl == "하" or sl == "하" else "improve"
-#     logging.info(f"[decide_path] 분기 결과: {result}")
-#     print(f"[decide_path] 분기 결과: {result}")
-#     return {"next": result}
-
-def decide_path(state: AgentState) -> Literal["perfect", "improve", "crew"]:
-    print("[decide_path] 분기 판단 중")
+def decide_path(state: AgentState) -> Literal["simple", "full"]:
     logging.info("[decide_path] 분기 판단 중")
     rl = state["resume_level"]
     sl = state["selfintro_level"]
-    result = "perfect" if rl == "상" and sl == "상" else "crew" if rl == "하" or sl == "하" else "improve"
+    result = "simple" if rl == "상" and sl == "상" else "full"
     logging.info(f"[decide_path] 분기 결과: {result}")
     return result
 
@@ -88,8 +78,11 @@ def generate_simple_feedback_node(state: AgentState) -> AgentState:
     }
 
 # ---- 6. 간단 피드백 검증 Node ----
-def verify_simple_feedback(state: AgentState) -> Literal["valid", "invalid"]:
+def verify_simple_feedback(state: AgentState) -> AgentState:
     logging.info("[simple_feedback_verify] 검증 시작")
+    logging.info(f"[simple_feedback_verify] state.keys(): {list(state.keys())}")
+    logging.info(f"[simple_feedback_verify] state['next']: {state.get('next')}")
+    
     result = verify_crew_output(
         resume_eval=state["resume_eval"],
         selfintro_eval=state["selfintro_eval"],
@@ -97,130 +90,138 @@ def verify_simple_feedback(state: AgentState) -> Literal["valid", "invalid"]:
         plan_text=""
     )
     logging.info(f"[simple_feedback_verify] 검증 결과: {result}")
-    return "valid" if "YES" in result else "invalid"
+    if not isinstance(result, dict):
+        logging.warning("[simple_feedback_verify] evaluation이 dict가 아님!")
+        verdict = ""
+    else:
+        verdict = result.get("verdict", "")
+        logging.info(f"[simple_feedback_verify] evaluation.verdict: {verdict}")
+    
+    outcome = "valid" if verdict == "YES" else "invalid"
+    logging.info(f"[simple_feedback_verify] outcome: {outcome}")
+    return {**state, "next": outcome}
+    
 
 # ---- 7. 간단 피드백 최종 응답 Node ----
 def return_simple_feedback(state: AgentState) -> AgentState:
     logging.info("[simple_feedback_return] 피드백 반환")
+    suggestion_text = state["simple_feedback_text"].content
     return {
         **state,
         "final_result": {
-            "type": "improve",
-            "message": "지원서는 전반적으로 괜찮지만 일부 개선이 가능합니다.",
-            "suggestion": state["simple_feedback_text"]
+            "type": "simple",
+            "message": "지원자의 이력서와 자기소개서는 매우 우수하여 큰 개선점은 발견되지 않았습니다. \n하지만 다음 단계로의 성장을 위한 제안을 드립니다.",
+            "gap_text": suggestion_text
         }
     }
 
-
-# ---- 8. 축하 메시지 반환 ----
-# def return_perfect(state: AgentState) -> dict:
-#     logging.info("[perfect_result] 완벽 판정 반환")
-#     return {
-#         "type": "perfect",
-#         "message": "이력서와 자기소개서가 모두 매우 우수하여 별도의 피드백이 필요하지 않습니다."
-#     }
-def return_perfect(state: AgentState) -> AgentState:
-    logging.info("[perfect_result] 완벽 판정 반환")
-    return {
-        **state,
-        "final_result": {
-            "type": "perfect",
-            "message": "이력서와 자기소개서가 모두 매우 우수하여 별도의 피드백이 필요하지 않습니다."
-        }
-    }
 
 
 # ---- 9. CrewAI 실행 Node ----
-# def run_crew_agent_sync(state: AgentState) -> AgentState:
-    # if state["resume_level"] != "하" and state["selfintro_level"] != "하":
-    #     logging.warning("[run_crew_agent_sync] 조건 불충족: Crew 실행 불필요")
-    #     return { **state, "skipped": True }
-
-    # try:
-    #     start = time.time()
-    #     logging.info("[crew_generate] CrewAI 실행 시작")
-    #     result = asyncio.run(analyze_with_raw_output(state["resume_eval"], state["selfintro_eval"]))
-    #     elapsed = time.time() - start
-    #     logging.info(f"[crew_generate] 완료 - {elapsed:.2f}초")
-
-    #     result_state = {
-    #         **state,
-    #         "gap_text": result.get("gap", ""),
-    #         "plan_text": result.get("plan", ""),
-    #         "retry_count": state["retry_count"] + 1,
-    #         "evaluation": result.get("evaluation", {}),
-    #         "resume_level": classify_level(state["resume_score"]),
-    #     "selfintro_level": classify_level(state["selfintro_score"])
-    #     }
-    #     result_state.pop("next", None)
-
-    #     logging.info(f"[crew_generate] 상태 반환: {result_state}")
-    #     return result_state
-    # except Exception as e:
-    #     logging.error(f"[crew_generate] 오류 발생: {e}")
-    #     return {
-    #         **state,
-    #         "gap_text": "",
-    #         "plan_text": "",
-    #         "retry_count": state.get("retry_count", 0) + 1,
-    #         "evaluation": {"verdict": "NO", "reason": str(e)}
-    #     }
+USE_MOCK_MODE = False
 def run_crew_agent_sync(state: AgentState) -> AgentState:
-    try:
-        start = time.time()
-        logging.info("[crew_generate] CrewAI 실행 시작")
-        result = asyncio.run(analyze_with_raw_output(state["resume_eval"], state["selfintro_eval"]))
-        elapsed = time.time() - start
-        logging.info(f"[crew_generate] 완료 - {elapsed:.2f}초")
+    if USE_MOCK_MODE:
+        logging.info("[crew_generate] MOCK 실행 시작")
 
-        result_state = {
-            **state,
-            "gap_text": result.get("gap", ""),
-            "plan_text": result.get("plan", ""),
-            "retry_count": state["retry_count"] + 1,
-            "evaluation": result.get("evaluation", {}),
-            "resume_level": classify_level(state["resume_score"]),
-            "selfintro_level": classify_level(state["selfintro_score"])
+        mock_gap = "1. Git 학습 필요\n2. Redux 실습 필요"
+        mock_plan = "1주차: Git 실습\n2주차: Redux 미니 프로젝트"
+        mock_evaluation = {
+            "verdict": "YES",
+            "reason": "테스트 목업: 평가 결과와 잘 일치함"
         }
-        return result_state
-    except Exception as e:
-        logging.error(f"[crew_generate] 오류 발생: {e}")
-        return {
+        logging.info(f"[crew_generate] MOCK 반환값: evaluation={mock_evaluation}")
+
+        mock_result = {
             **state,
-            "gap_text": "",
-            "plan_text": "",
+            "gap_text": mock_gap,
+            "plan_text": mock_plan,
+            "evaluation": mock_evaluation,
             "retry_count": state.get("retry_count", 0) + 1,
-            "evaluation": {"verdict": "NO", "reason": str(e)},
             "resume_level": classify_level(state["resume_score"]),
-            "selfintro_level": classify_level(state["selfintro_score"])
+            "selfintro_level": classify_level(state["selfintro_score"]),
+            "next": "verify"
         }
+        logging.info(f"[crew_generate] 리턴 전체 상태 keys: {list(mock_result.keys())}")
+        logging.info(f"[crew_generate] 리턴 next 값: {mock_result['next']}")
+
+        return mock_result
+    else:
+        try:
+            start = time.time()
+            logging.info("[crew_generate] CrewAI 실행 시작")
+            result = asyncio.run(analyze_with_raw_output(state["resume_eval"], state["selfintro_eval"]))
+            elapsed = time.time() - start
+            logging.info(f"[crew_generate] 완료 - {elapsed:.2f}초")
+
+            # JSON 구조화 시도 (검증 후 단계)
+            try:
+                plan_obj = json.loads(result.get("plan", ""))
+            except json.JSONDecodeError:
+                plan_obj = {
+                    "weeks": [
+                        {
+                            "week": "1주차",
+                            "focus": "학습 계획을 파악할 수 없습니다.",
+                            "tasks": [result.get("plan", "")]
+                        }
+                    ]
+                }
+            plan_json = json.dumps(plan_obj, ensure_ascii=False)
+
+            result_state = {
+                **state,
+                "gap_text": result.get("gap", ""),
+                "plan_text": plan_json,
+                "retry_count": state["retry_count"] + 1,
+                "evaluation": result.get("evaluation", {}),
+                "resume_level": classify_level(state["resume_score"]),
+                "selfintro_level": classify_level(state["selfintro_score"]),
+                "next": "verify"
+            }
+            return result_state
+        except Exception as e:
+            logging.error(f"[crew_generate] 오류 발생: {e}")
+            return {
+                **state,
+                "gap_text": "",
+                "plan_text": "",
+                "retry_count": state.get("retry_count", 0) + 1,
+                "evaluation": {"verdict": "NO", "reason": str(e)},
+                "resume_level": classify_level(state["resume_score"]),
+                "selfintro_level": classify_level(state["selfintro_score"]),
+                "next": "verify"
+            }
+
 
 # ---- 10. 결과 검증 Node ----
-def verify_output(state: AgentState) -> dict:
+def verify_output(state: AgentState) -> AgentState:
     logging.info("[verify] 검증 시작")
-    result = state.get("evaluation", {})
-    verdict = result.get("verdict", "") if isinstance(result, dict) else ""
+    logging.info(f"[verify] state.keys(): {list(state.keys())}")
+    logging.info(f"[verify] state['next']: {state.get('next')}")
+    result = state.get("evaluation", None)
+    logging.info(f"[verify] evaluation 타입: {type(result)} 값: {result}")
+
+    if not isinstance(result, dict):
+        logging.warning("[verify] evaluation이 dict가 아님!")
+        verdict = ""
+    else:
+        verdict = result.get("verdict", "")
+        logging.info(f"[verify] evaluation.verdict: {verdict}")
+        
     logging.info(f"[verify] verdict: {verdict}")
     outcome = "valid" if verdict == "YES" else "invalid"
+    logging.info(f"[verify] outcome: {outcome}")
     return {**state, "next": outcome}
 
 
 # ---- 11. 최종 결과 반환 Node ----
-# def return_result(state: AgentState) -> dict:
-#     logging.info("[return_result] 결과 반환")
-#     return {
-#         "type": "crew",
-#         "message": "CrewAI 결과가 타당하다고 판단됨",
-#         "gap_text": state["gap_text"],
-#         "plan_text": state["plan_text"]
-#     }
 def return_result(state: AgentState) -> AgentState:
     logging.info("[return_result] 결과 반환")
     return {
         **state,
         "final_result": {
-            "type": "crew",
-            "message": "CrewAI 결과가 타당하다고 판단됨",
+            "type": "full",
+            "message": "이력서와 자기소개서 분석 결과, 일부 개선이 필요한 항목이 확인되었습니다. \n아래 피드백과 함께, AI가 제안하는 맞춤형 학습 로드맵을 확인해보세요.",
             "gap_text": state["gap_text"],
             "plan_text": state["plan_text"]
         }
@@ -228,10 +229,10 @@ def return_result(state: AgentState) -> AgentState:
 
 
 # ---- 12. 실패 판단 Node ----
-def retry_or_fail(state: AgentState):
+def retry_or_fail(state: AgentState) -> dict:
     result = "retry" if state["retry_count"] < 2 else "fail"
     logging.info(f"[retry_check] 판단 결과: {result}")
-    return result
+    return {**state, "next": result}
 
 # ---- 13. 실패 반환 Node ----
 def return_fail(state: AgentState) -> AgentState:
@@ -241,26 +242,14 @@ def return_fail(state: AgentState) -> AgentState:
         "final_result": {
             "type": "fail",
             "message": (
-                "CrewAI가 생성한 결과가 2회 이상 검증을 통과하지 못했습니다. "
-                "입력된 평가 결과가 모호하거나, 모델 간 판단이 엇갈렸을 가능성이 있습니다.\n"
-                "더 나은 결과를 원하신다면 평가 결과를 구체화하거나, 직접 피드백 요청을 검토해보세요."
+                "AI가 분석한 결과가 일관되지 않아 명확한 로드맵을 생성하지 못했습니다. "
+                "이는 입력된 평가 내용이 중립적이거나, AI 모델 간 해석이 달랐기 때문일 수 있습니다.\n\n"
+                "더 구체적인 이력서 및 자기소개서를 입력하거나, 추가 피드백 요청을 통해 분석 정확도를 높일 수 있습니다."
             ),
             "gap_text": state.get("gap_text", ""),
             "plan_text": state.get("plan_text", "")
         }
     }
-# def return_fail(state: AgentState) -> dict:
-#     logging.info("[fail_result] 최종 실패 반환")
-#     return {
-#         "type": "fail",
-#         "message": (
-#             "CrewAI가 생성한 결과가 2회 이상 검증을 통과하지 못했습니다. "
-#             "입력된 평가 결과가 모호하거나, 모델 간 판단이 엇갈렸을 가능성이 있습니다.\n"
-#             "더 나은 결과를 원하신다면 평가 결과를 구체화하거나, 직접 피드백 요청을 검토해보세요."
-#         ),
-#         "gap_text": state.get("gap_text", ""),
-#         "plan_text": state.get("plan_text", "")
-#     }
 
 
 
@@ -276,44 +265,40 @@ workflow.add_node("fail_result", RunnableLambda(return_fail))
 workflow.add_node("simple_feedback_gen", RunnableLambda(generate_simple_feedback_node))
 workflow.add_node("simple_feedback_verify", RunnableLambda(verify_simple_feedback))
 workflow.add_node("simple_feedback_return", RunnableLambda(return_simple_feedback))
-workflow.add_node("perfect_result", RunnableLambda(return_perfect))
 workflow.add_node("retry_check", RunnableLambda(retry_or_fail))
 
 # 흐름 구성
 workflow.set_entry_point("init")
-# workflow.add_edge("init", "decide")
+
 workflow.add_conditional_edges("init", decide_path, {
-    "perfect": "perfect_result",
-    "improve": "simple_feedback_gen",
-    "crew": "crew_generate"
+    "simple": "simple_feedback_gen",
+    "full": "crew_generate"
 })
-
-workflow.add_edge("simple_feedback_gen", "simple_feedback_verify")
-workflow.add_conditional_edges("simple_feedback_verify", verify_simple_feedback, {
-    "valid": "simple_feedback_return",
-    "invalid": "fail_result"
-})
-
-def get_next_from_state(state: AgentState) -> Literal["valid", "invalid"]:
-    return state.get("next", "invalid")
 
 workflow.add_edge("crew_generate", "verify")
-# workflow.add_conditional_edges("verify", lambda s: s["next"] if isinstance(s, dict) else "invalid", {
-#     "valid": "return_result",
-#     "invalid": "retry_check"
-# })
-workflow.add_conditional_edges("verify", get_next_from_state, {
+
+
+workflow.add_conditional_edges("verify", lambda s: s["next"], {
     "valid": "return_result",
     "invalid": "retry_check"
 })
 
-workflow.add_conditional_edges("retry_check", retry_or_fail, {
+def get_retry_decision(state: AgentState) -> Literal["retry", "fail"]:
+    return state.get("next", "fail")
+workflow.add_conditional_edges("retry_check", get_retry_decision, {
     "retry": "crew_generate",
     "fail": "fail_result"
 })
 
 
-workflow.set_finish_point(["return_result", "simple_feedback_return", "perfect_result", "fail_result"])
+workflow.add_edge("simple_feedback_gen", "simple_feedback_verify")
+workflow.add_conditional_edges("simple_feedback_verify", lambda s: s["next"], {
+    "valid": "simple_feedback_return",
+    "invalid": "fail_result"
+})
+
+
+workflow.set_finish_point(["return_result", "simple_feedback_return","fail_result"])
 
 # 최종 실행기
 graph_executor = workflow.compile()

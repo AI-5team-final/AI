@@ -57,7 +57,7 @@ def verify_crew_output(resume_eval: str, selfintro_eval: str, gap_text: str, pla
     logging.info(f"[verify_crew_output] LLM 응답 원문:\n{content}")
     return extract_json_from_response(content)
 
-    t
+    
 
 
 # CrewAi 실행
@@ -69,22 +69,50 @@ async def analyze_with_raw_output(resume_eval: str, selfintro_eval: str) -> dict
         t1 = time.time()
         task1 = Task(
             description=f"""
-                        다음 이력서/자소서 평가 결과를 분석해 개선이 필요한 기술, 경험, 자격 요건을 제시하세요.
+                다음 이력서/자소서 평가 결과를 분석해, 개선이 필요한 기술, 경험, 자격 요건을 항목별로 제시하세요.
 
-                        - 이력서 평가:
-                        {resume_eval}
+                - 출력은 순수 텍스트 형식으로 제공해주세요.
+                - 마크다운 기호(예: '-', '*', '**', '#') 또는 개행(\\n)은 사용하지 마세요.
+                - 각 항목은 숫자로 구분된 문장으로 작성해주세요. (예: 1. ~, 2. ~)
+                - 불필요한 서식이나 장식 없이, 자연스러운 한글 문장으로 기술해주세요.
 
-                        - 자기소개서 평가:
-                        {selfintro_eval}
+                [이력서 평가]
+                {resume_eval}
 
-                        결과는 리스트로 출력하세요.
-                        """,
+                [자기소개서 평가]
+                {selfintro_eval}
+
+                출력 예시:
+                1. React 프로젝트 경험을 추가로 서술해야 합니다.
+                2. 자기소개서에 본인의 역할과 기여도를 구체적으로 작성하세요.
+            """,
             expected_output="개선 포인트 리스트",
             agent=gap_analyzer
         )
 
         task2 = Task(
-            description="앞선 항목을 기반으로 학습 로드맵을 작성해주세요 (2~4주 계획).",
+            description="""
+                앞선 항목을 기반으로 학습 로드맵을 작성해주세요 (2~4주 계획).
+
+                - 출력 형식은 아래와 같은 JSON 구조로 제공해주세요.
+                - 마크다운(예: **굵게**, -, \\n 등)은 절대 사용하지 마세요.
+                - HTML, 마크업 없이 순수한 텍스트 값만 포함해주세요.
+
+                예시:
+                {
+                    "weeks": [
+                        {
+                            "week": "1주차",
+                            "focus": "React 기초 학습",
+                            "tasks": [
+                                "JSX 문법 익히기",
+                                "useState, 이벤트 핸들링 실습"
+                            ]
+                        },
+                        ...
+                    ]
+                }
+            """,
             expected_output="주차별 학습 계획",
             agent=learning_coach
         )
