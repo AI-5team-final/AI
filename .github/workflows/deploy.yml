@@ -1,29 +1,29 @@
-name: Deploy to Server
+# name: Deploy to Server
 
-on:
-  workflow_run:
-    workflows: ["Docker Build and Push"]
-    types:
-      - completed
+# on:
+#   workflow_run:
+#     workflows: ["Docker Build and Push"]
+#     types:
+#       - completed
 
-jobs:
-  deploy:
-    name: Deploy Container
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     name: Deploy Container
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Pull latest Docker image
-        run: docker jungwoochan/fastapi-app:latest
+#       - name: Pull latest Docker image
+#         run: docker jungwoochan/fastapi-app:latest
 
-      - name: Stop and remove old container
-        run: |
-          docker stop fastapi-app || true
-          docker rm fastapi-app || true
+#       - name: Stop and remove old container
+#         run: |
+#           docker stop fastapi-app || true
+#           docker rm fastapi-app || true
 
-      - name: Run new container
-        run: |
-          docker run -d --name fastapi-app -p 8000:8000 \
-            your-dockerhub-username/fastapi-app:latest
+#       - name: Run new container
+#         run: |
+#           docker run -d --name fastapi-app -p 8000:8000 \
+#             your-dockerhub-username/fastapi-app:latest
