@@ -111,7 +111,8 @@ def return_simple_feedback(state: AgentState) -> AgentState:
         "final_result": {
             "type": "simple",
             "message": "지원자의 이력서와 자기소개서는 매우 우수하여 큰 개선점은 발견되지 않았습니다. \n하지만 다음 단계로의 성장을 위한 제안을 드립니다.",
-            "gap_text": suggestion_text
+            "gap_text": suggestion_text,
+            "plan_text": "",
         }
     }
 

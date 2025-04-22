@@ -14,7 +14,7 @@ class AgentRequest(BaseModel):
     selfintro_score: int
 
     
-@router.post("/analyze-test")
+@router.post("/analyze")
 async def analyze_with_agent(req: AgentRequest):
 
     resume_eval = req.resume_eval.strip()
