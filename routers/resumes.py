@@ -109,6 +109,7 @@ async def upload_pdf_endpoint(
     endDay: Optional[str] = Form(None)
 ):
     try:
+        print("PDF업로드 시작")
         text = await extract_text_from_uploadfile(file)
 
         if not text or len(text.strip()) < 10:
