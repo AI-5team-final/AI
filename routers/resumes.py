@@ -87,6 +87,7 @@ async def match_resume(resume: UploadFile = File(...)):
     print(f"[총 소요 시간]: {total_end - total_start:.2f}초")
 
     return {
+        "resume_text": resume_text,
         "matching_resumes": [
             {k: v for k, v in item.items() if k != "total_score"}
             for item in final_results
