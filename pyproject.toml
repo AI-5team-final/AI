@@ -32,6 +32,9 @@ pandas = "^2.2.3"
 starlette = "^0.46.0"
 langgraph = "0.3.31"
 
+[tool.poetry.group.dev.dependencies]
+uvicorn = "^0.34.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

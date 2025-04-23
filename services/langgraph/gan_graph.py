@@ -2,13 +2,14 @@ import logging
 import time
 import asyncio
 import json
+from typing import TypedDict, Literal, Optional
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableLambda
-from typing import TypedDict, Literal
 from services.crewai_core import (
     analyze_with_raw_output,
     verify_crew_output,
-    generate_simple_feedback
+    generate_simple_feedback,
+    self_intro_rewriter
 )
 
 
@@ -26,6 +27,7 @@ class AgentState(TypedDict):
     simple_feedback_text: str
     final_result: dict
     evaluation: dict
+    resume_text: Optional[str]
 
 # ---- 2. 점수 등급 분류 함수 ----
 def classify_level(score):
@@ -115,6 +117,35 @@ def return_simple_feedback(state: AgentState) -> AgentState:
             "plan_text": "",
         }
     }
+
+
+
+# ---- 8. 자소서 첨삭 및 검증 Node ----
+def self_intro_feedback_node(state: AgentState) -> AgentState:
+    logging.info("[self_intro_feedback] 자기소개서 첨삭 Task 시작")
+    resume_text = state.get("resume_text", "")
+    if not resume_text.strip():
+        logging.warning("[self_intro_feedback] 자기소개서 원문 없음. 생략.")
+        return state
+    feedback_text = self_intro_rewriter(resume_text)
+    updated_final_result = {
+        **state.get("final_result", {}),
+        "self_intro_feedback": feedback_text
+    }
+    return {
+        **state,
+        "final_result": updated_final_result 
+    }
+
+def verify_task3_output(state: AgentState) -> AgentState:
+    logging.info("[verify_task3] 자소서 피드백 검증 시작")
+    feedback = state.get("final_result", {}).get("self_intro_feedback", "")
+    if not feedback or "의미 없음" in feedback or len(feedback.strip()) < 10:
+        verdict = "NO"
+    else:
+        verdict = "YES"
+    outcome = "valid" if verdict == "YES" else "invalid"
+    return {**state, "next": outcome}
 
 
 
@@ -267,6 +298,8 @@ workflow.add_node("simple_feedback_gen", RunnableLambda(generate_simple_feedback
 workflow.add_node("simple_feedback_verify", RunnableLambda(verify_simple_feedback))
 workflow.add_node("simple_feedback_return", RunnableLambda(return_simple_feedback))
 workflow.add_node("retry_check", RunnableLambda(retry_or_fail))
+workflow.add_node("self_intro_feedback", RunnableLambda(self_intro_feedback_node))
+workflow.add_node("done", RunnableLambda(lambda s: s))
 
 # 흐름 구성
 workflow.set_entry_point("init")
@@ -299,7 +332,10 @@ workflow.add_conditional_edges("simple_feedback_verify", lambda s: s["next"], {
 })
 
 
-workflow.set_finish_point(["return_result", "simple_feedback_return","fail_result"])
+workflow.add_edge("return_result", "self_intro_feedback")
+workflow.add_edge("simple_feedback_return", "self_intro_feedback")
+workflow.add_edge("self_intro_feedback", "done")
+workflow.set_finish_point(["done", "fail_result"])
 
 # 최종 실행기
 graph_executor = workflow.compile()

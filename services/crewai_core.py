@@ -198,3 +198,29 @@ def extract_json_from_response(content: str) -> str:
         logging.warning(f"[extract_json] JSON 파싱 실패: {e}")
 
     return {"verdict": "NO", "reason": "LLM 응답이 JSON 형식이 아님"}
+
+def self_intro_rewriter(resume_text: str) -> str:
+    prompt = f"""
+    아래 자기소개서를 읽고 감점 요소가 될 수 있는 문장을 최대 3~5개 선정해주세요.
+
+    각 문장에 대해 다음과 같은 방식으로 작성하세요:
+    1. 원문 문장을 그대로 제시하고
+    2. 감점 사유를 간결히 설명하며
+    3. 보다 나은 인상을 줄 수 있는 개선 문장을 제안하세요.
+
+    반드시 아래 형식을 따르세요 (번호 순서, 들여쓰기 포함):
+    
+    1. 원문: ...
+       - 감점 사유: ...
+       - 개선 제안: ...
+    
+    반드시 지켜야 할 규칙:
+    - 마크다운 기호(예: '-', '*', '**', '#') 또는 개행(\\n)은 사용하지 마세요.
+    - 불필요한 서식이나 장식 없이, 자연스러운 한글 문장으로 기술해주세요.
+    - JSON 형식, 코드블럭 형식 없이 순수한 텍스트로만 작성하세요.
+
+    [자기소개서 원문]
+    {resume_text}
+    """
+    response = llm.invoke(prompt)
+    return response.content.strip()
