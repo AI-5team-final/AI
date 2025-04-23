@@ -3,7 +3,6 @@
 <h1>🧠 Rezoom</h1>
 <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
 
-<img src="./architecture.png" alt="Project Architecture" width="100%" />
 
 </div>
 
