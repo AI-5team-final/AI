@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>🧠 Rezoom</h1>
+<h1>Rezoom</h1>
 <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
 
 
