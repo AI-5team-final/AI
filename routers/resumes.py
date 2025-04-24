@@ -66,16 +66,19 @@ async def match_resume(resume: UploadFile = File(...)):
             "endDay": match.get("endDay", ""),
             "total_score": score
         })
-        print(match.get("startDay",""))
-        print(match.get("endDay",""))
 
-        # total_score 순으로 정렬
-        sorted_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+    t8 = time.perf_counter()
+    print(f"⏱️ [4] 결과 정리 및 정렬: {t8 - t7:.2f}초")
 
-        # total_score를 제외하고 final_results 생성
-        final_results = [
-        {k: v for k, v in item.items() if k != "total_score"}
-        for item in sorted_results
+    total_end = time.perf_counter()
+    print(f"[총 소요 시간]: {total_end - total_start:.2f}초")
+
+    return {
+        "resume_text": resume_text,
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
         ]
 
         # 정렬된 결과 반환
