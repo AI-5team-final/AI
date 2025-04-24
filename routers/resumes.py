@@ -171,6 +171,8 @@ async def compare_resume_posting(
 
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
+        evaluation_result["data"]["resume_text"] = resume_text
+        logging.info(f"result: {evaluation_result}")
 
         return {
             "result": evaluation_result

@@ -80,16 +80,19 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
             "total_score": score
         })
 
-    # total_score 순으로 정렬
-    final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+        # total_score 순으로 정렬
+        sorted_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
 
-    # total_score를 제외하고 반환
-    return {
-        "matching_resume": [
-            {k: v for k, v in item.items() if k != "total_score"}
-            for item in final_results
+        # total_score를 제외하고 final_results 생성
+        final_results = [
+        {k: v for k, v in item.items() if k != "total_score"}
+        for item in sorted_results
         ]
-    }
+
+        # 정렬된 결과 반환
+        return {
+            "matching_resumes": final_results
+        }
 
 
 
