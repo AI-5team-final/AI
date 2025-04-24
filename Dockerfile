@@ -20,5 +20,4 @@ ENV PATH="/root/.local/bin:$PATH"
 
 COPY . .
 
-# FastAPI 앱 실행
-CMD ["poetry","run","uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
