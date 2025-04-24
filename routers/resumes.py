@@ -27,8 +27,6 @@ async def match_resume(resume: UploadFile = File(...)):
     if not resume_text or len(resume_text.strip()) < 10:
         raise ResumeTextMissingException()
 
-    
-
     # 2. 유사한 채용공고 검색
     try:
         top_matches = await search_similar_postings_with_score(resume_text, top_k=5)
@@ -46,7 +44,6 @@ async def match_resume(resume: UploadFile = File(...)):
         for match in top_matches
     ]
     model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
-
     results = []
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
@@ -66,22 +63,16 @@ async def match_resume(resume: UploadFile = File(...)):
             "endDay": match.get("endDay", ""),
             "total_score": score
         })
-        print(match.get("startDay",""))
-        print(match.get("endDay",""))
 
-        # total_score 순으로 정렬
-        sorted_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
-
-        # total_score를 제외하고 final_results 생성
-        final_results = [
-        {k: v for k, v in item.items() if k != "total_score"}
-        for item in sorted_results
+        final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
+        print(results)
+    return {
+        "resume_text": resume_text,
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
         ]
-
-        # 정렬된 결과 반환
-        return {
-            "matching_resumes": final_results
-        }
+    }
 
 
 def parse_date(date_str: str):
