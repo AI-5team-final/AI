@@ -30,6 +30,10 @@ pandas = "^2.2.3"
 
 # === 미들웨어/서버 에러 핸들링 ===
 starlette = "^0.46.0"
+langgraph = "0.3.31"
+
+[tool.poetry.group.dev.dependencies]
+uvicorn = "^0.34.2"
 
 [build-system]
 requires = ["poetry-core"]
