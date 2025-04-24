@@ -15,7 +15,6 @@ from exception.base import (
 import asyncio, logging
 from datetime import datetime
 import xml.etree.ElementTree as ET
-import dicttoxml
 
 router = APIRouter()
 

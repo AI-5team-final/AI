@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import agent, resumes, postings
+from routers import resumes, postings, agent
 
 from exception.handlers import register_exception_handlers
 
