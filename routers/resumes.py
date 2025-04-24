@@ -3,7 +3,7 @@ from bson import ObjectId, errors
 from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
-from services.model_service import _extract_score_from_result, analyze_job_resume_matching
+from services.model_service import analyze_job_resume_matching
 from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
     store_resume_from_pdf, process_resume_csv, resumes_collection
@@ -14,9 +14,10 @@ from exception.base import (
 )
 import asyncio, logging
 from datetime import datetime
-import time
-router = APIRouter()
+import xml.etree.ElementTree as ET
+import dicttoxml
 
+router = APIRouter()
 
 
 @router.post("/match_resume")
@@ -48,10 +49,14 @@ async def match_resume(resume: UploadFile = File(...)):
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
 
-        # 모델 결과가 <result> 태그로 시작하는지 확인
         if isinstance(model_result, dict) and "data" in model_result:
             raw_result = model_result["data"]
-            score = _extract_score_from_result(raw_result)
+            
+            # dict에서 직접 total_score 추출
+            if isinstance(raw_result, dict) and "total_score" in raw_result:
+                score = int(raw_result["total_score"])
+            else:
+                score = 0
         else:
             raw_result = "모델 평가 실패 ~~"
             score = 0
@@ -64,8 +69,13 @@ async def match_resume(resume: UploadFile = File(...)):
             "total_score": score
         })
 
+<<<<<<< HEAD
         final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
         print(results)
+=======
+        final_results = sorted(results, key=lambda x: float(x["total_score"]), reverse=True)
+        print(score)
+>>>>>>> 4c7cd2b8b1c10ea2fe28a9bd5b74f1e7e3de1d85
     return {
         "resume_text": resume_text,
         "matching_resumes": [
@@ -166,6 +176,8 @@ async def compare_resume_posting(
 
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
+        evaluation_result["data"]["resume_text"] = resume_text
+        logging.info(f"result: {evaluation_result}")
 
         return {
             "result": evaluation_result
