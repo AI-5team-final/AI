@@ -45,30 +45,3 @@ async def analyze_with_agent(req: AgentRequest):
     except Exception as e:
         logging.error(f"[Agent 분석 오류]: {e}")
         raise AIAnalylizeException()
-
-@router.get("/test/analyze")
-async def test_analyze_with_agent(
-    eval_resume: str = Query(..., description="이력서 평가 결과"),
-    eval_selfintro: str = Query(..., description="자기소개서 평가 결과")
-):
-    combined_input = f"""[이력서 평가]
-{eval_resume.strip()}
-
-[자기소개서 평가]
-{eval_selfintro.strip()}"""
-
-    # self_intro_txt는 OCR 전체 텍스트에서 파싱
-    raw_ocr_text = f"{eval_resume.strip()}\n\n{eval_selfintro.strip()}"
-    self_intro_txt = extract_self_intro(raw_ocr_text)
-
-    try:
-        feedback = await run_resume_agent(combined_input, self_intro_txt)
-        return {
-            "test_input": combined_input,
-            "self_intro_txt": self_intro_txt.strip(),
-            "agent_feedback": feedback
-        }
-    except Exception as e:
-        logging.error(f"[Agent 테스트 오류]: {e}")
-        raise AIAnalylizeException()
->>>>>>> Stashed changes
