@@ -3,7 +3,7 @@ from bson import ObjectId, errors
 from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
-from services.model_service import _extract_score_from_result, analyze_job_resume_matching
+from services.model_service import analyze_job_resume_matching
 from db.postings import store_job_posting
 from db.resumes import (
     search_similar_resumes_with_score, store_resume_from_pdf, process_resume_csv, resumes_collection
