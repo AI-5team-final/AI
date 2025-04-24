@@ -1,6 +1,5 @@
 from fastapi import APIRouter, UploadFile, File
 from services.ocr_service import extract_text_from_uploadfile, extract_text_from_path
-from services.model_service import _extract_score_from_result
 from db.resumes import search_similar_resumes_with_score
 from db.postings import store_job_posting, get_embedding_async
 from exception.base import (
@@ -65,7 +64,12 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
         # 모델 결과가 <result> 태그로 시작하는지 확인
         if isinstance(model_result, dict) and "data" in model_result:
             raw_result = model_result["data"]
-            score = _extract_score_from_result(raw_result)
+            
+            # dict에서 직접 total_score 추출
+            if isinstance(raw_result, dict) and "total_score" in raw_result:
+                score = int(raw_result["total_score"])
+            else:
+                score = 0
         else:
             raw_result = "모델 평가 실패 ~~ "
             score = 0
