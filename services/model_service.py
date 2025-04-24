@@ -13,9 +13,6 @@ from xml.dom import minidom
 load_dotenv()
 
 
-
-
-
 async def analyze_job_resume_matching(resume_text: str, job_text: str) -> dict:
     try:
         # 1. RunPod 호출
