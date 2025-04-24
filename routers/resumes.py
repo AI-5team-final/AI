@@ -15,7 +15,6 @@ from exception.base import (
 import asyncio, logging
 from datetime import datetime
 import xml.etree.ElementTree as ET
-import dicttoxml
 
 router = APIRouter()
 
@@ -69,13 +68,8 @@ async def match_resume(resume: UploadFile = File(...)):
             "total_score": score
         })
 
-<<<<<<< HEAD
-        final_results = sorted(results, key=lambda x: x["total_score"], reverse=True)
-        print(results)
-=======
         final_results = sorted(results, key=lambda x: float(x["total_score"]), reverse=True)
         print(score)
->>>>>>> 4c7cd2b8b1c10ea2fe28a9bd5b74f1e7e3de1d85
     return {
         "resume_text": resume_text,
         "matching_resumes": [

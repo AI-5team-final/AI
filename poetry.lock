@@ -832,18 +832,6 @@ wrapt = ">=1.10,<2"
 dev = ["PyTest", "PyTest-Cov", "bump2version (<1)", "setuptools ; python_version >= \"3.12\"", "tox"]
 
 [[package]]
-name = "dicttoxml"
-version = "1.7.16"
-description = "Converts a Python dictionary or other native data type into a valid XML string."
-optional = false
-python-versions = ">=3.6"
-groups = ["main"]
-files = [
-    {file = "dicttoxml-1.7.16-py3-none-any.whl", hash = "sha256:8677671496d0d38e66c7179f82a7e9059f94887777955dc71b0ac602ee637c26"},
-    {file = "dicttoxml-1.7.16.tar.gz", hash = "sha256:6f36ce644881db5cd8940bee9b7cb3f3f6b7b327ba8a67d83d3e2caa0538bf9d"},
-]
-
-[[package]]
 name = "distro"
 version = "1.9.0"
 description = "Distro - an OS platform information API"
@@ -5232,4 +5220,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "97db00a0bc0ff04d9f568d50f7934b51524b4c6d729de2b401b88b1357cfb5f1"
+content-hash = "a041e7ed22ae03ad3131303c51aca0a69e9a684416be7827efbfa0d7f9dada73"
