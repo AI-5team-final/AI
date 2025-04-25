@@ -47,12 +47,12 @@
 
 ## 화면
 <div align="center">
-<img src="RezoomSystemArchitecture.jpg" width="45%"/>
-<img src="./images/RezoomLogin.jpg" width="45%"/>
+<img src="./images/RezoomSystemArchitecture.jpg" width="90%"/>
 </div>
 <div align="center">
-<img src="./images/RezoomUserMain.jpg" width="45%"/>
-<img src="./images/RezoomCompanyMain.jpg" width="45%"/>
+<img src="./images/RezoomLogin.jpg" width="50%"/>
+<img src="./images/RezoomUserMain.jpg" width="50%"/>
+<img src="./images/RezoomCompanyMain.jpg" width="50%"/>
 </div>
 
 
