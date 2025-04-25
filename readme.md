@@ -45,13 +45,20 @@
 
 ---
 
-## 화면
+## 시스템 아키텍쳐
 <div align="center">
-<img src="./images/RezoomSystemArchitecture.jpg" width="45%" style="margin: 10px;"/>
+<img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
+</div>
+
+---
+
+## 화면
+
+<div align="center">
 <img src="./images/RezoomLogin.jpg" width="45%" style="margin: 10px;"/>
+<img src="./images/RezoomUserMain.jpg" width="45%" style="margin: 10px;"/>
 </div>
 <div align="center">
-<img src="./images/RezoomUserMain.jpg" width="45%" style="margin: 10px;"/>
 <img src="./images/RezoomCompanyMain.jpg" width="45%" style="margin: 10px;"/>
 </div>
 
