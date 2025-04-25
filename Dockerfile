@@ -1,23 +1,22 @@
-FROM python:3.12-slim AS builder
-
-RUN apt-get update && apt-get install -y curl build-essential
-
-ENV POETRY_VERSION=2.1.2
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="/root/.local/bin:$PATH"
-ENV POETRY_VIRTUALENVS_CREATE=false
-
-WORKDIR /app
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --only main
-
+# 베이스 이미지
 FROM python:3.12-slim
+
+# 시스템 패키지 설치 (필요시 빌드 도구 포함)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# 작업 디렉토리 설정
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
-COPY --from=builder /root/.local /root/.local
-ENV PATH="/root/.local/bin:$PATH"
+# requirements.txt 복사 및 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
+# 앱 코드 복사
 COPY . .
 
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 앱 실행
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
