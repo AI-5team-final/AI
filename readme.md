@@ -34,6 +34,10 @@
 | **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate / RunPod 추론 서버                                |
 | **기타 연동**    | Toss Payments, OpenAI API, Poetry, Wandb                                                         |
 
+<div align="center">
+<img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
+</div>
+
 ---
 
 ## 모델 상세
@@ -42,13 +46,6 @@
 - **기반**: Meta LLaMA 3.1 8B, 4-bit 양자화, b16 r64 구조
 - **파인튜닝**: Unsloth + Alpaca SFT
 - **배포 환경**: RunPod 워커 병렬 추론 → FastAPI 호출로 응답
-
----
-
-## 시스템 아키텍쳐
-<div align="center">
-<img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
-</div>
 
 ---
 
@@ -62,7 +59,7 @@
 <img src="./images/RezoomCompanyMain.jpg" width="45%" style="margin: 10px;"/>
 </div>
 
-
+---
 
 ## 기술 스택
 
