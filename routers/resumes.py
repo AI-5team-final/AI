@@ -4,36 +4,32 @@ from pydantic import BaseModel
 from typing import Optional
 from services.ocr_service import extract_text_from_uploadfile
 from services.model_service import analyze_job_resume_matching
-from db.postings import store_job_posting
+from db.postings import store_job_posting, search_similar_postings_with_score
 from db.resumes import (
-    search_similar_resumes_with_score, store_resume_from_pdf, process_resume_csv, resumes_collection
+    store_resume_from_pdf, process_resume_csv, resumes_collection
 )
 from exception.base import (
     SimilarFoundException, ResumeTextMissingException,InvalidObjectIdException, MongoSaveException,
-    ResumeNotFoundException ,BothNotFoundException, GptEvaluationFailedException, GptProcessingException ,JobPostingTextMissingException
+    ResumeNotFoundException ,BothNotFoundException, ModelProcessingException, HTTPException
 )
 import asyncio, logging
+from datetime import datetime
+import xml.etree.ElementTree as ET
 
 router = APIRouter()
 
-class ResumeSaveRequest(BaseModel):
-    resume_text: str
-class ResumeAnalysisRequest(BaseModel):
-    resume_text: str 
-    job_id: str
-    
-    
 
 @router.post("/match_resume")
-async def match_resume(job_posting: UploadFile = File(...)):
-    # 1. 채용공고 텍스트 추출
-    posting_text = await extract_text_from_uploadfile(job_posting)
-    if not posting_text or len(posting_text.strip()) < 10:
-        raise JobPostingTextMissingException()
+async def match_resume(resume: UploadFile = File(...)):
 
-    # 2. 유사한 이력서 검색
+    resume_text = await extract_text_from_uploadfile(resume)
+
+    if not resume_text or len(resume_text.strip()) < 10:
+        raise ResumeTextMissingException()
+
+    # 2. 유사한 채용공고 검색
     try:
-        top_matches = await search_similar_resumes_with_score(posting_text, top_k=5)
+        top_matches = await search_similar_postings_with_score(resume_text, top_k=5)
         logging.info(f"[탑 매치 수]: {len(top_matches)}")
     except Exception as e:
         logging.error(f"[유사 채용공고 검색 실패]: {e}")
@@ -42,44 +38,52 @@ async def match_resume(job_posting: UploadFile = File(...)):
     # 3. 모델 평가 비동기 실행
     model_tasks = [
         analyze_job_resume_matching(
-            resume_text=match.get("original_text", ""),
-            job_text=posting_text
+            resume_text=resume_text,
+            job_text=match.get("original_text", "")
         )
         for match in top_matches
     ]
     model_results = await asyncio.gather(*model_tasks, return_exceptions=True)
-
-    # 4. 결과 정리
     results = []
     for i, match in enumerate(top_matches):
         model_result = model_results[i]
 
-        raw_result = "<result><total_score>0</total_score><summary>모델 평가 실패</summary></result>"
-        score = 0
+        if isinstance(model_result, dict) and "data" in model_result:
+            raw_result = model_result["data"]
+            
+            # dict에서 직접 total_score 추출
+            if isinstance(raw_result, dict) and "total_score" in raw_result:
+                score = int(raw_result["total_score"])
+            else:
+                score = 0
+        else:
+            raw_result = "모델 평가 실패 ~~"
+            score = 0
 
-        if isinstance(model_result, str) and model_result.strip().startswith("<result>"):
-            raw_result = model_result.strip()
-            score = _extract_score_from_result(raw_result)
-        
         results.append({
             "object_id": str(match.get("_id")),
             "result": raw_result,
             "startDay": match.get("startDay", ""),
             "endDay": match.get("endDay", ""),
-            "total_score":score   # sort후 제거 (임시)
+            "total_score": score
         })
 
-    final_results = [
-        {k: v for k, v in item.items() if k != "total_score"} # 총점 제외하고 새로운 딕셔너리 만듬
-        for item in sorted(results, key=lambda x: x["total_score"], reverse=True)
-    ]
-
+        final_results = sorted(results, key=lambda x: float(x["total_score"]), reverse=True)
+        print(score)
     return {
-    "matching_resumes": final_results
+        "resume_text": resume_text,
+        "matching_resumes": [
+            {k: v for k, v in item.items() if k != "total_score"}
+            for item in final_results
+        ]
     }
 
 
-
+def parse_date(date_str: str):
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
 
 
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
@@ -90,21 +94,23 @@ async def upload_pdf_endpoint(
     end_day: Optional[str] = Form(None)
 ):
     try:
-        print("PDF업로드 시작")
-        text = await extract_text_from_uploadfile(file)
+        print("저장요청")
+        text  = await extract_text_from_uploadfile(file)
 
-        if not resume_text or len(resume_text.strip()) < 10:
+        if not text  or len(text .strip()) < 10:
             raise ResumeTextMissingException()
 
         # 저장 경로 분기
         if start_day and end_day:
+            start_date = parse_date(start_day)
+            end_date = parse_date(end_day)
             object_id = await store_job_posting(
-                job_text=resume_text,
-                start_day=start_day,
-                end_day=end_day
+                job_text=text ,
+                start_day=start_date,
+                end_day=end_date
             )
         else:
-            object_id = await store_resume_from_pdf(resume_text)
+            object_id = await store_resume_from_pdf(text)
 
         if not object_id:
             raise MongoSaveException()
@@ -115,25 +121,6 @@ async def upload_pdf_endpoint(
         logging.error(f"[업로드 실패]: {e}")
         raise
 
-
-# @router.post("/upload-pdf")
-# async def upload_pdf_endpoint(resume: UploadFile = File(...)):
-#     try:
-#         print("저장요청")
-#         resume_text = await extract_text_from_uploadfile(resume)
-#         if not resume_text or len(resume_text.strip()) < 10:
-#             raise ResumeTextMissingException()
-
-#         embedding = await get_embedding(resume_text) 
-#         resume_id = await store_resume_from_pdf(resume_text, embedding)
-#         if not resume_id:
-#             raise MongoSaveException()
-        
-#         return {"object_id": resume_id}
-
-#     except Exception as e:
-#         logging.error(f"[업로드 실패]: {e}")
-#         raise
 
 # ==== 이력서 ObjectId로 하나 삭제 ====
 @router.delete("/delete_resume/{resume_id}")
@@ -164,22 +151,16 @@ async def compare_resume_posting(
 
     try:
         evaluation_result = await analyze_job_resume_matching(resume_text, posting_text)
-
-        if not isinstance(evaluation_result, dict) or not all(
-            k in evaluation_result for k in ("total_score", "summary", "gpt_answer")
-        ):
-            raise GptEvaluationFailedException()
+        evaluation_result["data"]["resume_text"] = resume_text
+        logging.info(f"result: {evaluation_result}")
 
         return {
-            "total_score": evaluation_result["total_score"],
-            "summary": evaluation_result["summary"],
-            "gpt_answer": evaluation_result["gpt_answer"]
+            "result": evaluation_result
         }
 
     except Exception as e:
-        logging.error(f"[GPT 분석 오류]: {e}")
-        raise GptProcessingException()
-
+        logging.error(f"[런팟 오류]: {e}")
+        raise ModelProcessingException()
 
 
 # ==== CSV 이력서 업로드 ====
@@ -194,9 +175,7 @@ async def upload_resume_csv(file: UploadFile = File(...)):
             "file": file.filename,
             "inserted": inserted_count
         }
-
+ 
     except Exception as e:
         logging.error(f"[CSV 이력서 처리 실패] {e}")
         raise ResumeTextMissingException()
-
-    
