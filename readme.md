@@ -9,7 +9,7 @@
 
 저희 프로젝트 **Rezoom**은 지원자의 이력서와 채용공고를 AI가 분석하여  **매칭 점수, 요약, 학습 로드맵, 자기소개서 피드백**을 제공하는  
 **AI 기반 양방향 채용 매칭·코칭 플랫폼**입니다.
-모델은 직접
+단순 API 사용이 아닌 직접 학습시킨 LoRA 기반 LLaMA3 모델 사용 
 
 ### 주요 기능
 - LLM 기반 이력서-채용공고 정밀 분석 및 매칭
@@ -53,6 +53,7 @@
 </div>
 <div align="center">
 <img src="./images/RezoomCompanyMain.jpg" width="45%" style="margin: 10px;"/>
+<img src="./images/RezoomUserMatching.jpg" width="45%" style="margin: 10px;"/>
 </div>
 
 ---
@@ -62,7 +63,7 @@
 <div align="center">
 
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=React&logoColor=white"/>
-<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/>
+<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> '[]]
 <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"/>
 <img src="https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=PostgreSQL&logoColor=white"/>
 <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=MongoDB&logoColor=white"/>
