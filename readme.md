@@ -45,6 +45,16 @@
 
 ---
 
+## 화면
+<div align="center">
+<img src="RezoomSystemArchitecture.png" width="90%"/>
+</div>
+<img src="./images/RezoomLogin.jpg" width="90%"/>
+<img src="./images/RezoomUserMain.jpg" width="90%"/>
+<img src="./images/RezoomCompanyMain.jpg" width="90%"/>
+
+
+
 ## 기술 스택
 
 <div align="center">
