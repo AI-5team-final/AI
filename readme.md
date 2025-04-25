@@ -23,8 +23,8 @@
 
 | 영역             | 기술 구성                                                                                                                                   |
 |------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **Frontend**     | React + Netlify                                                                                                                              |
-| **Backend**      | Spring Boot (Auth, JWT, TossPayments, S3 연동), FastAPI (AI 분석, 벡터 검색)                                                                 |
+| **Frontend**     | React                                                                                                                       |
+| **Backend**      | Spring Boot (결제 모듈 연동, S3 연동), FastAPI (AI 분석, 벡터 검색)                                                                 |
 | **AI/LLM 모델**  | `LLaMA3 8B` (LoRA fine-tuned via Unsloth), CrewAI 기반 Agent, LangGraph GAN 검증                                                            |
 | **데이터베이스** | PostgreSQL, MongoDB Atlas (벡터 인덱싱 포함)                                                                                                 |
 | **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate, RunPod 추론 서버                                                                             |
