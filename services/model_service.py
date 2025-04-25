@@ -13,15 +13,6 @@ from xml.dom import minidom
 load_dotenv()
 
 
-
-# ==== total_score 순 sorting할때 ====
-def _extract_score_from_result(xml_string: str) -> int:
-    try:
-        root = ET.fromstring(xml_string)
-        return int(root.findtext("total_score", default="0"))
-    except Exception:
-        return 0
-
 async def analyze_job_resume_matching(resume_text: str, job_text: str) -> dict:
     try:
         # 1. RunPod 호출
