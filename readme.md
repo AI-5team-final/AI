@@ -1,10 +1,6 @@
 <div align="center">
-
-<img src="./34e72f34-33f5-47ce-af00-be133d2efc1f.png" width="90%"/>
-
 <h1>Rezoom</h1>
 <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
-
 </div>
 
 ---
@@ -24,13 +20,13 @@
 
 ## 시스템 아키텍처
 
-| 영역             | 기술 구성                                                                                       |
+| 영역             | 기술 구성                                                                                         |
 |------------------|--------------------------------------------------------------------------------------------------|
-| **Frontend**     | React                                                                                |
-| **Backend**      | Spring Boot (결제, 인증), FastAPI (AI 분석, DB 연동)                                             |
-| **AI/LLM 모델**  | `LLaMA3 8B` (Unsloth LoRA fine-tuned) + CrewAI Agent + LangGraph GAN 구조                         |
-| **데이터베이스** | PostgreSQL, MongoDB Atlas                                                                        |
-| **스토리지**     | Amazon S3                                                                   |
+| **Frontend**     | React                                                                                           |
+| **Backend**      | Spring Boot (결제, 인증), FastAPI (AI 분석, DB 연동)                                              |
+| **AI/LLM 모델**  | `LLaMA3 8B` (Unsloth LoRA fine-tuned) + CrewAI Agent + LangGraph GAN 구조                        |
+| **데이터베이스** | PostgreSQL, MongoDB Atlas                                                                         |
+| **스토리지**     | Amazon S3                                                                                        |
 | **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate / RunPod 추론 서버                                |
 | **기타 연동**    | Toss Payments, OpenAI API, Poetry, Wandb                                                         |
 
