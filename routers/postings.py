@@ -81,7 +81,7 @@ async def match_job_posting(job_posting: UploadFile = File(...)):
         })
 
         final_results = sorted(results, key=lambda x: float(x["total_score"]), reverse=True)
-        
+
     return {
         "matching_resume": [
             {k: v for k, v in item.items() if k != "total_score"}
