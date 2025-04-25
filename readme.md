@@ -49,8 +49,8 @@
 <div align="center">
 <img src="./images/RezoomSystemArchitecture.jpg" width="90%"/>
 </div>
+<img src="./images/RezoomLogin.jpg" width="90%"/>
 <div align="center">
-<img src="./images/RezoomLogin.jpg" width="50%"/>
 <img src="./images/RezoomUserMain.jpg" width="50%"/>
 <img src="./images/RezoomCompanyMain.jpg" width="50%"/>
 </div>
