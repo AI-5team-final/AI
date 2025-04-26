@@ -2,9 +2,7 @@ import asyncio
 import aiohttp
 import logging
 import os
-import xml.etree.ElementTree as ET
 import re
-from typing import Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from xml.etree.ElementTree import Element, tostring

@@ -2,42 +2,67 @@
 
 <h1>Rezoom</h1>
 <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
-
-
 </div>
 
 ---
 
-## 프로젝트 소개
 
-**Rezoom**은 사용자의 이력서와 채용공고를 AI가 분석하여  
- 매칭 점수 ·  요약 ·  학습 로드맵을 제공하는 **AI 기반 채용 매칭·코칭 서비스**입니다.
+## 프로젝트 개요
 
-- 자체 파인튜닝한 LLM과 벡터 검색 시스템을 결합
-- Multi-Agent 구조 기반의 AI 분석 & 코칭 흐름 구현
-- 완전 모듈화된 MSA 아키텍처 기반 실시간 응답 시스템
+저희 프로젝트 **Rezoom**은 지원자의 이력서와 채용공고를 AI가 분석하여  **매칭 점수, 요약, 학습 로드맵, 자기소개서 피드백**을 제공하는  
+**AI 기반 양방향 채용 매칭·코칭 플랫폼**입니다.
+단순 API 사용이 아닌 직접 학습시킨 LoRA 기반 LLaMA3 모델 사용 
+
+### 주요 기능
+- LLM 기반 이력서-채용공고 정밀 분석 및 매칭
+- Multi-Agent 기반 피드백 & 로드맵 생성
+- 프론트/백 분리 + 완전 MSA 구조 + ECS 자동 배포
 
 ---
 
-## 시스템 구성
+## 시스템 아키텍처
 
-| 영역             | 기술 구성                                                                                                                                   |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| **Frontend**     | React                                                                                                                       |
-| **Backend**      | Spring Boot (결제 모듈 연동, S3 연동), FastAPI (AI 분석, 벡터 검색)                                                                 |
-| **AI/LLM 모델**  | `LLaMA3 8B` (LoRA fine-tuned via Unsloth), CrewAI 기반 Agent, LangGraph GAN 검증                                                            |
-| **데이터베이스** | PostgreSQL, MongoDB Atlas (벡터 인덱싱 포함)                                                                                                 |
-| **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate, RunPod 추론 서버                                                                             |
-| **기타 연동**    | Toss Payments, Poetry, wandb, OpenAI API                                                                                                      |
+| 영역             | 기술 구성                                                                                         |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Frontend**     | React                                                                                           |
+| **Backend**      | Spring Boot (결제, 인증), FastAPI (AI 분석, DB 연동)                                              |
+| **AI/LLM 모델**  | `LLaMA3 8B` (Unsloth LoRA fine-tuned) + CrewAI Agent + LangGraph GAN 구조                        |
+| **데이터베이스** | PostgreSQL, MongoDB Atlas                                                                         |
+| **스토리지**     | Amazon S3                                                                                        |
+| **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate / RunPod 추론 서버                                |
+| **기타 연동**    | Toss Payments, OpenAI API, Poetry, Wandb                                                         |
+
+<div align="center">
+<img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
+</div>
+
+
 
 ---
 
 ## 모델 상세
 
-- **모델명**: `ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged`
+- **모델명**: `ninky0/rezoom-llama3.1-8b-4bit-b16-r64`
+- **기반**: Meta LLaMA 3.1 8B, 4-bit 양자화, b16 r64 구조
+- **파인튜닝**: Unsloth + Alpaca SFT
+- **배포 환경**: RunPod 워커 병렬 추론 → FastAPI 호출로 응답
 - **구성**: LLaMA3 기반 8B 모델, 4-bit LoRA, b16 r64 구조
 - **추론 환경**: RunPod 병렬 워커 배포, FastAPI로 서빙
 - **검증 흐름**: LangGraph 기반 GAN 구조 + Agent 기반 피드백 추천
+
+---
+
+## 화면
+
+<div align="center">
+<img src="./images/RezoomLogin.jpg" width="45%" style="margin: 10px;"/>
+<img src="./images/RezoomUserMain.jpg" width="45%" style="margin: 10px;"/>
+</div>
+<div align="center">
+<img src="./images/RezoomCompanyMain.jpg" width="45%" style="margin: 10px;"/>
+<img src="./images/RezoomUserMatching.jpg" width="45%" style="margin: 10px;"/>
+</div>
+
 
 ---
 
@@ -46,7 +71,7 @@
 <div align="center">
 
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=React&logoColor=white"/>
-<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/>
+<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> 
 <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"/>
 <img src="https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=PostgreSQL&logoColor=white"/>
 <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=MongoDB&logoColor=white"/>
@@ -62,14 +87,13 @@
 ---
 
 
+## 모델 저장소
 
-- 🤖 모델 저장소: [Hugging Face - ninky0/rezoom](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged)
-
+[Hugging Face - ninky0/rezoom-llama3.1-8b-4bit-b16-r64](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64)
 
 ---
 
 <div align="center">
-
-⭐ 본 프로젝트는 실무형 AI 서비스 구축을 위한 종합적인 실험과 개발 경험을 바탕으로 진행되었습니다.
-
+본 프로젝트는 실무형 AI 채용 서비스를 위한  
+엔드-투-엔드 아키텍처 구성 및 모델 추론 시스템을 구현하며 개발 역량을 강화하는 데 중점을 두었습니다.
 </div>
