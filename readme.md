@@ -46,7 +46,7 @@
 - **기반**: Meta LLaMA 3.1 8B, 4-bit 양자화, b16 r64 구조
 - **파인튜닝**: Unsloth + Alpaca SFT
 - **배포 환경**: RunPod 워커 병렬 추론 → FastAPI 호출로 응답
-- - **구성**: LLaMA3 기반 8B 모델, 4-bit LoRA, b16 r64 구조
+- **구성**: LLaMA3 기반 8B 모델, 4-bit LoRA, b16 r64 구조
 - **추론 환경**: RunPod 병렬 워커 배포, FastAPI로 서빙
 - **검증 흐름**: LangGraph 기반 GAN 구조 + Agent 기반 피드백 추천
 
