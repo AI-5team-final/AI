@@ -89,13 +89,13 @@ def parse_date(date_str: str):
 # # ==== 이력서 / 채용공고 저장 -> objectId 응답 ====
 @router.post("/upload-pdf")
 async def upload_pdf_endpoint(
-    resume: UploadFile = File(...),
+    file: UploadFile = File(...),
     start_day: Optional[str] = Form(None),
     end_day: Optional[str] = Form(None)
 ):
     try:
         print("저장요청")
-        text  = await extract_text_from_uploadfile(resume)
+        text  = await extract_text_from_uploadfile(file)
 
         if not text  or len(text .strip()) < 10:
             raise ResumeTextMissingException()
