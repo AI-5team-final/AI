@@ -50,7 +50,7 @@
 
 ## 모델 상세
 
-- **모델명**: `ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged`
+- **모델명**: `ninky0/rezoom-llama3.1-8b-4bit-b16-r64`
 - **기반**: Meta LLaMA 3.1 8B, 4-bit 양자화, b16 r64 구조
 - **파인튜닝**: Unsloth + Alpaca SFT
 - **배포 환경**: RunPod 워커 병렬 추론 → FastAPI 호출로 응답
