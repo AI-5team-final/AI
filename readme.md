@@ -1,9 +1,11 @@
 <div align="center">
+
 <h1>Rezoom</h1>
 <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
 </div>
 
 ---
+
 
 ## 프로젝트 개요
 
@@ -34,6 +36,16 @@
 <img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
 </div>
 
+
+## 프로젝트 소개
+
+**Rezoom**은 사용자의 이력서와 채용공고를 AI가 분석하여  
+ 매칭 점수 ·  요약 ·  학습 로드맵을 제공하는 **AI 기반 채용 매칭·코칭 서비스**입니다.
+
+- 자체 파인튜닝한 LLM과 벡터 검색 시스템을 결합
+- Multi-Agent 구조 기반의 AI 분석 & 코칭 흐름 구현
+- 완전 모듈화된 MSA 아키텍처 기반 실시간 응답 시스템
+
 ---
 
 ## 모델 상세
@@ -56,6 +68,11 @@
 <img src="./images/RezoomUserMatching.jpg" width="45%" style="margin: 10px;"/>
 </div>
 
+- **구성**: LLaMA3 기반 8B 모델, 4-bit LoRA, b16 r64 구조
+- **추론 환경**: RunPod 병렬 워커 배포, FastAPI로 서빙
+- **검증 흐름**: LangGraph 기반 GAN 구조 + Agent 기반 피드백 추천
+
+
 ---
 
 ## 기술 스택
@@ -63,7 +80,7 @@
 <div align="center">
 
 <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=React&logoColor=white"/>
-<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> '[]]
+<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> 
 <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"/>
 <img src="https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=PostgreSQL&logoColor=white"/>
 <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=MongoDB&logoColor=white"/>
@@ -78,15 +95,14 @@
 
 ---
 
+
 ## 모델 저장소
 
-[Hugging Face - ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64)
+[Hugging Face - ninky0/rezoom-llama3.1-8b-4bit-b16-r64](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64)
 
 ---
 
 <div align="center">
-
 본 프로젝트는 실무형 AI 채용 서비스를 위한  
 엔드-투-엔드 아키텍처 구성 및 모델 추론 시스템을 구현하며 개발 역량을 강화하는 데 중점을 두었습니다.
-
 </div>

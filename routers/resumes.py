@@ -122,25 +122,6 @@ async def upload_pdf_endpoint(
         raise
 
 
-# @router.post("/upload-pdf")
-# async def upload_pdf_endpoint(resume: UploadFile = File(...)):
-#     try:
-#         print("저장요청")
-#         resume_text = await extract_text_from_uploadfile(resume)
-#         if not resume_text or len(resume_text.strip()) < 10:
-#             raise ResumeTextMissingException()
-
-#         embedding = await get_embedding(resume_text) 
-#         resume_id = await store_resume_from_pdf(resume_text, embedding)
-#         if not resume_id:
-#             raise MongoSaveException()
-        
-#         return {"object_id": resume_id}
-
-#     except Exception as e:
-#         logging.error(f"[업로드 실패]: {e}")
-#         raise
-
 # ==== 이력서 ObjectId로 하나 삭제 ====
 @router.delete("/delete_resume/{resume_id}")
 async def delete_resume(resume_id: str = Path(..., description="MongoDB resume 문서의 ObjectId")):
