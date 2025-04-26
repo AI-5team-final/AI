@@ -80,7 +80,7 @@
 
 ## 모델 저장소
 
-[Hugging Face - ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged)
+[Hugging Face - ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged](https://huggingface.co/ninky0/rezoom-llama3.1-8b-4bit-b16-r64)
 
 ---
 
