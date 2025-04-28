@@ -1,14 +1,26 @@
-<div align="center">
 
-<h1>Rezoom</h1>
-<p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
-
-
+<div>
+  <h1>
+    <img src="https://github.com/user-attachments/assets/13a24ec6-d806-49e7-b6a6-e3a6ed71943b" width="20"> Rezoom
+  </h1>
+  <table>
+    <tr>
+      <td align="top">
+        <img src="https://github.com/user-attachments/assets/ec03ffd0-211a-4b9c-bdab-4a6d41a137b0" width="400">
+      </td>
+      <td align="top">
+        <img src="https://github.com/user-attachments/assets/d6c852f0-4cc0-4aa8-8fc3-e294a9931a93" width="400">
+      </td>
+      <td align="top">
+        <img src="https://github.com/user-attachments/assets/318ab0a6-5cbf-47c6-9892-29db681b15f2" width="400">
+      </td>
+    </tr>
+  </table>
 </div>
 
 ---
 
-## 프로젝트 소개
+## 🖐️ 프로젝트 소개
 
 **Rezoom**은 사용자의 이력서와 채용공고를 AI가 분석하여  
  매칭 점수 ·  요약 ·  학습 로드맵을 제공하는 **AI 기반 채용 매칭·코칭 서비스**입니다.
@@ -19,7 +31,7 @@
 
 ---
 
-## 시스템 구성
+## 🏗️ 시스템 구성
 
 | 영역             | 기술 구성                                                                                                                                   |
 |------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
@@ -32,7 +44,7 @@
 
 ---
 
-## 모델 상세
+## 🔎 모델 상세
 
 - **모델명**: `ninky0/rezoom-llama3.1-8b-4bit-b16-r64-merged`
 - **구성**: LLaMA3 기반 8B 모델, 4-bit LoRA, b16 r64 구조
@@ -41,7 +53,29 @@
 
 ---
 
-## 기술 스택
+## 📱 소프트웨어 아키텍쳐
+### 1. 시스템 아키텍쳐
+ <table>
+    <tr>
+      <td>
+        <img src="https://github.com/user-attachments/assets/6d0da1ad-fa6f-4cf4-8cff-4e7820324b71" width="1200">
+      </td>
+    </tr>
+ </table>
+
+
+### 2. 시퀀스 다이어그램
+ <table>
+    <tr>
+      <td>
+       <img src="https://github.com/user-attachments/assets/a7a7b262-5fdc-4567-862c-2ccb7235c46a" width="800">
+      </td>
+    </tr>
+ </table>
+ 
+---
+
+## 📚 기술 스택
 
 <div align="center">
 
