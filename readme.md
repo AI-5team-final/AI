@@ -103,6 +103,15 @@
 
 ---
 
+## 팀원 및 팀 소개
+| 김지환 | 남인경 | 손정원 | 정우찬 | 최정민 |
+|:------:|:------:|:------:|:------:|:------:|
+| <img src="https://github.com/user-attachments/assets/ccdf5839-bee6-44f1-a1f8-8d4fea6dd70e" alt="김지환" width="120"/> | <img src="https://github.com/user-attachments/assets/d27f9342-eca2-4142-9c8f-df89c445e62a" alt="남인경" width="120"/> | <img src="https://github.com/user-attachments/assets/148e27b1-22b0-4ad3-911f-186041e10b3c" alt="손정원" width="120"/> | <img src="https://github.com/user-attachments/assets/962d7da4-135f-4d2b-9981-e923db94eff0" alt="정우찬" width="120"/> | <img src="https://github.com/user-attachments/assets/ceb4fff9-1da7-40d7-ac6e-45deffec56de" alt="최정민" width="120"/> |
+| PM, FE, AI | BE, FE, AI | BE, AI, Infra | BE, AI | FE, BE, AI |
+| [GitHub](https://github.com/doram419) | [GitHub](https://github.com/Ninky0) | [GitHub](https://github.com/Sonyeoul) | [GitHub](https://github.com/hammer8130) | [GitHub](https://github.com/cjmin-n) |
+
+<br/>
+
 <div align="center">
 본 프로젝트는 실무형 AI 채용 서비스를 위한  
 엔드-투-엔드 아키텍처 구성 및 모델 추론 시스템을 구현하며 개발 역량을 강화하는 데 중점을 두었습니다.
