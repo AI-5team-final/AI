@@ -32,9 +32,7 @@
 | **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate / RunPod 추론 서버                                |
 | **기타 연동**    | Toss Payments, OpenAI API, Poetry, Wandb                                                         |
 
-<div align="center">
-<img src="./images/RezoomSystemArchitecture.jpg" width="90%" style="margin: 10px;"/>
-</div>
+
 
 
 
