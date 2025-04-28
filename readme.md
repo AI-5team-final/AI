@@ -33,7 +33,7 @@
 
 <div align="center">
   <h1>
-    <img src="https://github.com/user-attachments/assets/3f30c5c4-3e74-45c9-9e71-4d078c92eb76" width="90%" style="margin: 10px;"/>
+    <img alt="image" src="https://github.com/user-attachments/assets/33d5c051-b1c9-4b0d-b380-ab68aee11e91" width="90%" style="margin: 10px;/>
   </h1>
   <img src="https://github.com/user-attachments/assets/2c9b4b83-8843-4b61-a47f-76cdbc24d2b9" height="45%" style="margin: 10px;"/>
 </div>
