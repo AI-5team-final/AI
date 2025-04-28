@@ -1,7 +1,6 @@
 <div align="center">
-
-<h1>Rezoom</h1>
-<p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
+  <h1><img src="https://github.com/user-attachments/assets/13a24ec6-d806-49e7-b6a6-e3a6ed71943b" width="20"> Rezoom</h1>
+  <p>AI 기반 이력서-채용공고 매칭 및 코칭 서비스</p>
 </div>
 
 ---
@@ -32,9 +31,12 @@
 | **인프라**       | GitHub Actions → Docker → AWS ECR → ECS Fargate / RunPod 추론 서버                                |
 | **기타 연동**    | Toss Payments, OpenAI API, Poetry, Wandb                                                         |
 
-
-
-
+<div align="center">
+  <h1>
+    <img src="https://github.com/user-attachments/assets/3f30c5c4-3e74-45c9-9e71-4d078c92eb76" width="90%" style="margin: 10px;"/>
+  </h1>
+  <img src="https://github.com/user-attachments/assets/2c9b4b83-8843-4b61-a47f-76cdbc24d2b9" height="45%" style="margin: 10px;"/>
+</div>
 
 ---
 
@@ -52,27 +54,45 @@
 
 ## 화면
 
-
+<div>
+  <table>
+    <tr>
+      <td>
+        <img src="https://github.com/user-attachments/assets/9fd6ce1e-8ef1-4d9d-98b1-85a7728aefbc" style="margin: 10px;">
+      </td>
+      <td>
+        <img src="https://github.com/user-attachments/assets/6aa45948-a8d2-4746-bfb6-d8fdb352b1b1" style="margin: 10px;">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://github.com/user-attachments/assets/76f3040d-2280-4204-967c-7588c0e976bd" style="margin: 10px;">
+      </td>
+      <td> 
+        <img src="https://github.com/user-attachments/assets/df6a2340-931e-440c-829b-34cca4378a03" style="margin: 10px;">
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
 ## 기술 스택
 
 <div align="center">
-
-<img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=React&logoColor=white"/>
-<img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> 
-<img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"/>
-<img src="https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=PostgreSQL&logoColor=white"/>
-<img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=MongoDB&logoColor=white"/>
-<img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white"/>
-<img src="https://img.shields.io/badge/AWS_ECS-F8991D?style=flat-square&logo=amazonaws&logoColor=white"/>
-<img src="https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white"/>
-<img src="https://img.shields.io/badge/TossPayments-0984E3?style=flat-square&logoColor=white"/>
-<img src="https://img.shields.io/badge/Poetry-3D3D3D?style=flat-square&logo=python&logoColor=white"/>
-<img src="https://img.shields.io/badge/RunPod-purple?style=flat-square&logo=docker&logoColor=white"/>
-
+  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=React&logoColor=white"/>
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=FastAPI&logoColor=white"/> 
+  <img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=flat-square&logo=SpringBoot&logoColor=white"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-336791?style=flat-square&logo=PostgreSQL&logoColor=white"/>
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=flat-square&logo=MongoDB&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=Docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/AWS_ECS-F8991D?style=flat-square&logo=amazonaws&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white"/>
+  <img src="https://img.shields.io/badge/TossPayments-0984E3?style=flat-square&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Poetry-3D3D3D?style=flat-square&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/RunPod-purple?style=flat-square&logo=docker&logoColor=white"/>
 </div>
+
 
 ---
 
