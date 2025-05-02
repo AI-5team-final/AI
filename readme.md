@@ -12,7 +12,7 @@
 **AI 기반 양방향 채용 매칭·코칭 플랫폼**입니다.
 단순 API 사용이 아닌 직접 학습시킨 LoRA 기반 LLaMA3 모델 사용 
 
- [프로젝트 설명서 보기 (PDF)](./project_intro/Rezoom.pdf)
+ [프로젝트 설명서 보기 (PDF)](https://drive.google.com/file/d/1nvfbnXT1kPhEXJKAFP8ScFdXQHpMChsF/view?usp=drive_link)
 
 ### 주요 기능
 - LLM 기반 이력서-채용공고 정밀 분석 및 매칭
