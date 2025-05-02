@@ -13,7 +13,7 @@
 단순 API 사용이 아닌 직접 학습시킨 LoRA 기반 LLaMA3 모델 사용 
 
  [프로젝트 설명서 보기 (PDF)](https://drive.google.com/file/d/1nvfbnXT1kPhEXJKAFP8ScFdXQHpMChsF/view?usp=drive_link)
-
+ [프로젝트 시연영상 보기 (Youtube)](https://youtu.be/D0xesYMLBeg)
 ### 주요 기능
 - LLM 기반 이력서-채용공고 정밀 분석 및 매칭
 - Multi-Agent 기반 피드백 & 로드맵 생성
