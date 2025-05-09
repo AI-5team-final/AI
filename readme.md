@@ -112,6 +112,13 @@
 |:------:|:------:|:------:|:------:|:------:|
 | <img src="https://github.com/user-attachments/assets/ccdf5839-bee6-44f1-a1f8-8d4fea6dd70e" alt="김지환" width="120"/> | <img src="https://github.com/user-attachments/assets/d27f9342-eca2-4142-9c8f-df89c445e62a" alt="남인경" width="120"/> | <img src="https://github.com/user-attachments/assets/148e27b1-22b0-4ad3-911f-186041e10b3c" alt="손정원" width="120"/> | <img src="https://github.com/user-attachments/assets/962d7da4-135f-4d2b-9981-e923db94eff0" alt="정우찬" width="120"/> | <img src="https://github.com/user-attachments/assets/ceb4fff9-1da7-40d7-ac6e-45deffec56de" alt="최정민" width="120"/> |
 | PM, FE, AI | BE, FE, AI | BE, AI, Infra | BE, AI | FE, BE, AI |
+|  | SpringSecurity+JWT 기반 회원 관리 시스템
+TossPayments 결제창 연동 및 크레딧 서비스
+모델 학습용 데이터셋 구축 및 검증
+Llama-3.1 8B 모델 QLoRA 방식 파인튜닝 및 배포
+CrewAI+LangGraph기반 자소서 피드백 서비스
+Swagger를 활용한 API 명세 자동화
+Intro.js를 활용한 사용자 온보딩 튜토리얼 구성  |  |  |  |
 | [GitHub](https://github.com/doram419) | [GitHub](https://github.com/Ninky0) | [GitHub](https://github.com/Sonyeoul) | [GitHub](https://github.com/hammer8130) | [GitHub](https://github.com/cjmin-n) |
 
 <br/>
